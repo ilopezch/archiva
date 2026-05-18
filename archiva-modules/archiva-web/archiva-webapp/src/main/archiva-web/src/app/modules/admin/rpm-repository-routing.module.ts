@@ -1,0 +1,47 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {NgModule} from '@angular/core';
+import {RouterModule, Routes} from '@angular/router';
+import {RoutingGuardService as Guard} from '@app/services/routing-guard.service';
+import {ManageRpmRepoComponent} from './manage-rpm-repo/manage-rpm-repo.component';
+import {ManageRpmRepoListComponent} from './manage-rpm-repo-list/manage-rpm-repo-list.component';
+import {ManageRpmRepoAddComponent} from './manage-rpm-repo-add/manage-rpm-repo-add.component';
+import {ManageRpmRepoEditComponent} from './manage-rpm-repo-edit/manage-rpm-repo-edit.component';
+
+const routes: Routes = [
+    {
+        path: '',
+        component: ManageRpmRepoComponent,
+        canActivate: [Guard],
+        data: {perm: 'menu.admin.config'},
+        children: [
+            {path: 'list', component: ManageRpmRepoListComponent},
+            {path: 'add', component: ManageRpmRepoAddComponent},
+            {path: 'edit/:id', component: ManageRpmRepoEditComponent},
+            {path: '', redirectTo: 'list', pathMatch: 'full'}
+        ]
+    }
+];
+
+@NgModule({
+    imports: [RouterModule.forChild(routes)],
+    exports: []
+})
+export class RpmRepositoryRoutingModule {
+}

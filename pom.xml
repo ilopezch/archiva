@@ -24,6 +24,7 @@
     <groupId>org.apache.archiva</groupId>
     <artifactId>archiva-parent</artifactId>
     <version>19-SNAPSHOT</version>
+    <relativePath>../archiva-parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>archiva</artifactId>

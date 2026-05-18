@@ -109,9 +109,35 @@
     </servlet-class>
   </servlet>
 
+  <servlet>
+    <servlet-name>NpmRegistryServlet</servlet-name>
+    <servlet-class>
+      org.apache.archiva.npm.repository.servlet.NpmRegistryServlet
+    </servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
+
+  <servlet>
+    <servlet-name>RpmRegistryServlet</servlet-name>
+    <servlet-class>
+      org.apache.archiva.rpm.repository.servlet.RpmRegistryServlet
+    </servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
+
   <servlet-mapping>
     <servlet-name>RssFeedServlet</servlet-name>
     <url-pattern>/feeds/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>NpmRegistryServlet</servlet-name>
+    <url-pattern>/npm/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>RpmRegistryServlet</servlet-name>
+    <url-pattern>/rpm/*</url-pattern>
   </servlet-mapping>
   
   <servlet-mapping>

@@ -25,5 +25,5 @@ package org.apache.archiva.repository;
  */
 public enum RepositoryType {
 
-    ALL, MAVEN, NPM
+    ALL, MAVEN, NPM, RPM
 }

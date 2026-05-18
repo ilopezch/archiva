@@ -118,6 +118,8 @@
       <ref bean="v2.repositoryGroupService#rest" />
       <ref bean="v2.repositoryService#rest"/>
       <ref bean="v2.managedMavenRepositoryService#rest"/>
+      <ref bean="v2.managedNpmRepositoryService#rest"/>
+      <ref bean="v2.managedRpmRepositoryService#rest"/>
     </jaxrs:serviceBeans>
 
     <jaxrs:features>

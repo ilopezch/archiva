@@ -36,6 +36,8 @@
     "admin": {
       "section": "Administration",
       "repositories": "Repositories",
+      "npmrepositories": "NPM Repositories",
+      "rpmrepositories": "RPM Repositories",
       "repositorygroups": "Repository Groups",
       "proxy": "Proxy",
       "network": "Network",
@@ -321,5 +323,101 @@
   },
   "me": {
     "title": "Current User Information"
+  },
+  "rpm-repo": {
+    "list": {
+      "head": "List"
+    },
+    "add": {
+      "head": "Add Repository",
+      "submit": "Create Repository",
+      "success": "RPM repository '{id}' was created successfully.",
+      "error": {
+        "title": "Failed to create repository"
+      }
+    },
+    "edit": {
+      "head": "Edit Repository",
+      "submit": "Save Changes",
+      "success": "RPM repository '{id}' was updated successfully.",
+      "error": {
+        "title": "Failed to update repository"
+      }
+    },
+    "delete": {
+      "title": "Delete repository",
+      "success": "RPM repository '{id}' was deleted."
+    },
+    "attributes": {
+      "id": "Repository ID",
+      "name": "Name",
+      "description": "Description",
+      "location": "Storage Location",
+      "scanned": "Enable Scanning",
+      "scheduling_definition": "Scan Schedule (cron)"
+    },
+    "input": {
+      "id": "e.g. my-rpm-repo",
+      "name": "e.g. My RPM Repository",
+      "description": "Optional description",
+      "location": "Absolute filesystem path",
+      "scheduling_definition": "0 0 * * * ?",
+      "small": {
+        "scheduling_definition": "Quartz cron expression, e.g. 0 0 * * * ? for hourly"
+      }
+    },
+    "error": {
+      "id": {
+        "pattern": "ID may only contain letters, digits, dots, hyphens and underscores."
+      }
+    }
+  },
+  "npm-repo": {
+    "list": {
+      "head": "List"
+    },
+    "add": {
+      "head": "Add Repository",
+      "submit": "Create Repository",
+      "success": "NPM repository '{id}' was created successfully.",
+      "error": {
+        "title": "Failed to create repository"
+      }
+    },
+    "edit": {
+      "head": "Edit Repository",
+      "submit": "Save Changes",
+      "success": "NPM repository '{id}' was updated successfully.",
+      "error": {
+        "title": "Failed to update repository"
+      }
+    },
+    "delete": {
+      "title": "Delete repository",
+      "success": "NPM repository '{id}' was deleted."
+    },
+    "attributes": {
+      "id": "Repository ID",
+      "name": "Name",
+      "description": "Description",
+      "location": "Storage Location",
+      "scanned": "Enable Scanning",
+      "scheduling_definition": "Scan Schedule (cron)"
+    },
+    "input": {
+      "id": "e.g. my-npm-repo",
+      "name": "e.g. My NPM Repository",
+      "description": "Optional description",
+      "location": "Absolute filesystem path",
+      "scheduling_definition": "0 0 * * * ?",
+      "small": {
+        "scheduling_definition": "Quartz cron expression, e.g. 0 0 * * * ? for hourly"
+      }
+    },
+    "error": {
+      "id": {
+        "pattern": "ID may only contain letters, digits, dots, hyphens and underscores."
+      }
+    }
   }
 }

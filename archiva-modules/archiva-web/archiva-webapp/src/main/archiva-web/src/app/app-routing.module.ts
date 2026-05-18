@@ -48,6 +48,14 @@ const routes: Routes = [
     },
 
     {
+        path: 'admin', component: HomeComponent, canActivate: [Guard], data: {perm: 'menu.admin.section'},
+        children: [
+            {path: 'npm-repositories', loadChildren: () => import('@app/modules/admin/npm-repository.module').then(m => m.NpmRepositoryModule)},
+            {path: 'rpm-repositories', loadChildren: () => import('@app/modules/admin/rpm-repository.module').then(m => m.RpmRepositoryModule)},
+        ]
+    },
+
+    {
         path: 'security', component: HomeComponent,canActivate:[Guard],data:{perm: 'menu.security.section'},
         children: [
             {path: 'users', loadChildren: () => import('@app/modules/security/user.module').then(m => m.UserModule)},

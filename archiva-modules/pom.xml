@@ -46,6 +46,8 @@
     <module>metadata</module>
     <module>plugins</module>
     <module>archiva-maven</module>
+    <module>archiva-npm</module>
+    <module>archiva-rpm</module>
   </modules>
 
   <build>
