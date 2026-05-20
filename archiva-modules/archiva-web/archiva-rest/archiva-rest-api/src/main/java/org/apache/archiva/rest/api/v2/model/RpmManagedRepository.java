@@ -29,6 +29,12 @@ public class RpmManagedRepository extends Repository
 {
     private static final long serialVersionUID = 1L;
 
+    @Schema( description = "Path to an operator-supplied GPG secret key file. Leave blank to use the auto-generated key." )
+    private String gpgKeyPath;
+
+    @Schema( description = "User-ID (name/email) for the GPG key. Used only when generating a new key." )
+    private String gpgUserId;
+
     public RpmManagedRepository()
     {
         super.setCharacteristic( Repository.CHARACTERISTIC_MANAGED );
@@ -47,4 +53,10 @@ public class RpmManagedRepository extends Repository
         dto.setSchedulingDefinition( repo.getSchedulingDefinition() );
         return dto;
     }
+
+    public String getGpgKeyPath() { return gpgKeyPath; }
+    public void setGpgKeyPath( String gpgKeyPath ) { this.gpgKeyPath = gpgKeyPath; }
+
+    public String getGpgUserId() { return gpgUserId; }
+    public void setGpgUserId( String gpgUserId ) { this.gpgUserId = gpgUserId; }
 }

@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.archiva.components.rest.model.PagedResult;
 import org.apache.archiva.redback.authorization.RedbackAuthorization;
+import org.apache.archiva.rest.api.v2.model.RpmGpgKeyInfo;
 import org.apache.archiva.rest.api.v2.model.RpmManagedRepository;
 import org.apache.archiva.rest.api.v2.svc.ArchivaRestServiceException;
 
@@ -142,5 +143,35 @@ public interface RpmManagedRepositoryService
     )
     Response deleteManagedRepository( @PathParam( "id" ) String repositoryId,
                                       @QueryParam( "deleteContent" ) @DefaultValue( "false" ) Boolean deleteContent )
+        throws ArchivaRestServiceException;
+
+    @GET
+    @Path( "{id}/gpgkey" )
+    @Produces( {APPLICATION_JSON} )
+    @RedbackAuthorization( permissions = {OPERATION_MANAGE_CONFIGURATION} )
+    @Operation( summary = "Returns GPG key information for the repository, creating the key if necessary.",
+        security = {@SecurityRequirement( name = OPERATION_MANAGE_CONFIGURATION )},
+        responses = {
+            @ApiResponse( responseCode = "200", description = "GPG key details including armored public key" ),
+            @ApiResponse( responseCode = "403", description = "Authenticated user does not have permission" ),
+            @ApiResponse( responseCode = "404", description = "Repository not found" )
+        }
+    )
+    RpmGpgKeyInfo getGpgKey( @PathParam( "id" ) String repositoryId )
+        throws ArchivaRestServiceException;
+
+    @POST
+    @Path( "{id}/gpgkey/rotate" )
+    @Produces( {APPLICATION_JSON} )
+    @RedbackAuthorization( permissions = {OPERATION_MANAGE_CONFIGURATION} )
+    @Operation( summary = "Generates a new GPG signing key and re-signs repomd.xml.",
+        security = {@SecurityRequirement( name = OPERATION_MANAGE_CONFIGURATION )},
+        responses = {
+            @ApiResponse( responseCode = "200", description = "New GPG key details" ),
+            @ApiResponse( responseCode = "403", description = "Authenticated user does not have permission" ),
+            @ApiResponse( responseCode = "404", description = "Repository not found" )
+        }
+    )
+    RpmGpgKeyInfo rotateGpgKey( @PathParam( "id" ) String repositoryId )
         throws ArchivaRestServiceException;
 }

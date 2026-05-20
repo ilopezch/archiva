@@ -27,13 +27,16 @@ import org.apache.archiva.repository.Repository;
 import org.apache.archiva.repository.RepositoryException;
 import org.apache.archiva.repository.RepositoryRegistry;
 import org.apache.archiva.repository.RepositoryType;
+import org.apache.archiva.rest.api.v2.model.RpmGpgKeyInfo;
 import org.apache.archiva.rest.api.v2.model.RpmManagedRepository;
 import org.apache.archiva.rest.api.v2.svc.ArchivaRestServiceException;
 import org.apache.archiva.rest.api.v2.svc.ErrorKeys;
 import org.apache.archiva.rest.api.v2.svc.ErrorMessage;
 import org.apache.archiva.rest.api.v2.svc.rpm.RpmManagedRepositoryService;
 import org.apache.archiva.rest.v2.svc.AbstractService;
+import org.apache.archiva.rpm.repository.repodata.RepomdGenerator;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -42,6 +45,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -212,6 +217,84 @@ public class DefaultRpmManagedRepositoryService extends AbstractService implemen
         }
     }
 
+    @Override
+    public RpmGpgKeyInfo getGpgKey( String repositoryId ) throws ArchivaRestServiceException
+    {
+        ManagedRepository repo = requireRpmRepository( repositoryId );
+        Path repoRoot = repo.getRoot().getFilePath();
+        String gpgKeyPath = null;
+        String gpgUserId  = null;
+        if ( repo instanceof org.apache.archiva.rpm.repository.RpmManagedRepository )
+        {
+            org.apache.archiva.rpm.repository.RpmManagedRepository r =
+                (org.apache.archiva.rpm.repository.RpmManagedRepository) repo;
+            gpgKeyPath = r.getGpgKeyPath();
+            gpgUserId  = r.getGpgUserId();
+        }
+        try
+        {
+            RepomdGenerator.GpgKeyDetails details =
+                new RepomdGenerator().getKeyDetails( repoRoot, gpgKeyPath, gpgUserId );
+            return toKeyInfo( details );
+        }
+        catch ( IOException | PGPException e )
+        {
+            log.error( "Could not load GPG key for repository {}: {}", repositoryId, e.getMessage(), e );
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
+        }
+    }
+
+    @Override
+    public RpmGpgKeyInfo rotateGpgKey( String repositoryId ) throws ArchivaRestServiceException
+    {
+        ManagedRepository repo = requireRpmRepository( repositoryId );
+        Path repoRoot = repo.getRoot().getFilePath();
+        String gpgUserId = null;
+        if ( repo instanceof org.apache.archiva.rpm.repository.RpmManagedRepository )
+        {
+            gpgUserId = ( (org.apache.archiva.rpm.repository.RpmManagedRepository) repo ).getGpgUserId();
+        }
+        try
+        {
+            RepomdGenerator gen = new RepomdGenerator();
+            RepomdGenerator.GpgKeyDetails details = gen.rotateKey( repoRoot, gpgUserId );
+            // Re-sign repomd.xml with the new key
+            gen.rebuild( repoRoot );
+            return toKeyInfo( details );
+        }
+        catch ( IOException | PGPException e )
+        {
+            log.error( "Could not rotate GPG key for repository {}: {}", repositoryId, e.getMessage(), e );
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
+        }
+    }
+
+    private ManagedRepository requireRpmRepository( String repositoryId ) throws ArchivaRestServiceException
+    {
+        ManagedRepository repo = repositoryRegistry.getManagedRepository( repositoryId );
+        if ( repo == null || repo.getType() != RepositoryType.RPM )
+        {
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_NOT_FOUND, repositoryId ), 404 );
+        }
+        return repo;
+    }
+
+    private static RpmGpgKeyInfo toKeyInfo( RepomdGenerator.GpgKeyDetails d )
+    {
+        RpmGpgKeyInfo info = new RpmGpgKeyInfo();
+        info.setFingerprint( d.fingerprint );
+        info.setUserId( d.userId );
+        info.setAlgorithm( d.algorithm );
+        info.setBitStrength( d.bitStrength );
+        info.setCreated( d.created != null ? d.created.toString() : null );
+        info.setExpires( d.expires != null ? d.expires.toString() : null );
+        info.setArmoredPublicKey( d.armoredPublicKey );
+        return info;
+    }
+
     private ManagedRepositoryConfiguration toConfig( RpmManagedRepository dto )
     {
         ManagedRepositoryConfiguration cfg = new ManagedRepositoryConfiguration();
@@ -225,6 +308,8 @@ public class DefaultRpmManagedRepositoryService extends AbstractService implemen
         cfg.setType( RepositoryType.RPM.name() );
         cfg.setReleases( true );
         cfg.setSnapshots( false );
+        cfg.setGpgKeyPath( dto.getGpgKeyPath() );
+        cfg.setGpgUserId( dto.getGpgUserId() );
         return cfg;
     }
 

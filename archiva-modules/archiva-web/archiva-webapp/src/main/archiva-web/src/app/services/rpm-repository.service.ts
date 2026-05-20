@@ -21,7 +21,7 @@ import {HttpErrorResponse, HttpResponse} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {ArchivaRequestService} from './archiva-request.service';
-import {RpmManagedRepository} from '@app/model/rpm-managed-repository';
+import {RpmGpgKeyInfo, RpmManagedRepository} from '@app/model/rpm-managed-repository';
 import {PagedResult} from '@app/model/paged-result';
 
 @Injectable({
@@ -74,6 +74,20 @@ export class RpmRepositoryService {
             catchError((error: HttpErrorResponse) =>
                 throwError(this.rest.getTranslatedErrorResult(error))),
             map((response: HttpResponse<boolean>) => response.status === 200)
+        );
+    }
+
+    getGpgKey(id: string): Observable<RpmGpgKeyInfo> {
+        return this.rest.executeRestCall<RpmGpgKeyInfo>('get', 'archiva', `${this.BASE}/${id}/gpgkey`, null).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error)))
+        );
+    }
+
+    rotateGpgKey(id: string): Observable<RpmGpgKeyInfo> {
+        return this.rest.executeRestCall<RpmGpgKeyInfo>('post', 'archiva', `${this.BASE}/${id}/gpgkey/rotate`, null).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error)))
         );
     }
 }

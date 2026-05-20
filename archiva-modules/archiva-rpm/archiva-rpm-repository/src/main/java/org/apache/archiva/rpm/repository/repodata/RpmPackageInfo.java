@@ -65,8 +65,17 @@ public class RpmPackageInfo
     public List<String> provideVersions = new ArrayList<>();
     public List<Integer> provideFlags   = new ArrayList<>();
 
-    // File list (abbreviated — full list deferred to filelists.xml)
+    // File list basenames (TAG_BASENAMES 1117)
     public List<String> files = new ArrayList<>();
+
+    // Directory info for full path reconstruction (TAG_DIRNAMES 1118, TAG_DIRINDEXES 1119)
+    public List<String>  dirNames   = new ArrayList<>();
+    public List<Integer> dirIndexes = new ArrayList<>();
+
+    // Changelog entries — parallel arrays (TAG_CHANGELOGTIME 1080, TAG_CHANGELOGNAME 1081, TAG_CHANGELOGTEXT 1082)
+    public List<Long>   changelogTimes = new ArrayList<>();
+    public List<String> changelogNames = new ArrayList<>();
+    public List<String> changelogTexts = new ArrayList<>();
 
     public String pkgId()
     {

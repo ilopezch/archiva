@@ -26,4 +26,16 @@ export class RpmManagedRepository {
     type: string = 'RPM';
     characteristic: string = 'managed';
     layout: string = 'rpm-default';
+    gpg_key_path: string = '';
+    gpg_user_id: string = '';
+}
+
+export interface RpmGpgKeyInfo {
+    fingerprint: string;
+    userId: string;
+    algorithm: string;
+    bitStrength: number;
+    created: string;
+    expires: string | null;
+    armoredPublicKey: string;
 }

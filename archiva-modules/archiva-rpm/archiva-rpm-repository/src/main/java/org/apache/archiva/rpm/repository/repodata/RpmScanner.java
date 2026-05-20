@@ -34,6 +34,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Walks an RPM repository root and parses every {@code .rpm} file found under
@@ -61,13 +62,33 @@ public final class RpmScanner
      */
     public static List<RpmPackageInfo> scan( Path repoRoot ) throws IOException
     {
+        return scan( repoRoot, null );
+    }
+
+    /**
+     * Scans all RPMs under {@code repoRoot}, serving unchanged files from {@code cache}
+     * when the cached mtime matches.  Updated and new entries are written back into
+     * {@code cache} so the caller can persist it afterward.
+     *
+     * @param repoRoot absolute path to the repository root
+     * @param cache    repodata cache to consult/update, or {@code null} to disable caching
+     */
+    public static List<RpmPackageInfo> scan( Path repoRoot, RpmRepodataCache cache ) throws IOException
+    {
         List<RpmPackageInfo> packages = new ArrayList<>();
-        scanDir( repoRoot, repoRoot.resolve( "RPMS" ), packages );
-        scanDir( repoRoot, repoRoot.resolve( "SRPMS" ), packages );
+        AtomicInteger hits   = new AtomicInteger();
+        AtomicInteger misses = new AtomicInteger();
+        scanDir( repoRoot, repoRoot.resolve( "RPMS" ),  packages, cache, hits, misses );
+        scanDir( repoRoot, repoRoot.resolve( "SRPMS" ), packages, cache, hits, misses );
+        if ( cache != null )
+        {
+            log.debug( "Cache hits={} misses={} in {}", hits.get(), misses.get(), repoRoot );
+        }
         return packages;
     }
 
-    private static void scanDir( Path repoRoot, Path dir, List<RpmPackageInfo> packages )
+    private static void scanDir( Path repoRoot, Path dir, List<RpmPackageInfo> packages,
+                                  RpmRepodataCache cache, AtomicInteger hits, AtomicInteger misses )
         throws IOException
     {
         if ( !Files.isDirectory( dir ) )
@@ -79,44 +100,58 @@ public final class RpmScanner
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
             {
-                if ( file.getFileName().toString().endsWith( ".rpm" ) )
+                if ( !file.getFileName().toString().endsWith( ".rpm" ) )
                 {
-                    try
+                    return FileVisitResult.CONTINUE;
+                }
+                try
+                {
+                    String relPath = repoRoot.relativize( file ).toString().replace( '\\', '/' );
+                    long   mtime   = attrs.lastModifiedTime().toMillis();
+
+                    if ( cache != null )
                     {
-                        RpmPackageInfo info = parseRpm( repoRoot, file );
-                        if ( info != null )
+                        RpmPackageInfo cached = cache.get( relPath, mtime );
+                        if ( cached != null )
                         {
-                            packages.add( info );
+                            packages.add( cached );
+                            hits.incrementAndGet();
+                            return FileVisitResult.CONTINUE;
                         }
+                        misses.incrementAndGet();
                     }
-                    catch ( Exception e )
+
+                    RpmPackageInfo info = parseRpm( repoRoot, file, relPath, attrs );
+                    if ( info != null )
                     {
-                        log.warn( "Skipping unreadable RPM {}: {}", file, e.getMessage() );
+                        packages.add( info );
+                        if ( cache != null ) cache.put( relPath, mtime, info );
                     }
+                }
+                catch ( Exception e )
+                {
+                    log.warn( "Skipping unreadable RPM {}: {}", file, e.getMessage() );
                 }
                 return FileVisitResult.CONTINUE;
             }
         } );
     }
 
-    private static RpmPackageInfo parseRpm( Path repoRoot, Path rpmFile ) throws IOException
+    private static RpmPackageInfo parseRpm( Path repoRoot, Path rpmFile,
+                                             String relPath, BasicFileAttributes attrs ) throws IOException
     {
-        // First pass: parse header metadata
         RpmPackageInfo info;
         try ( InputStream in = Files.newInputStream( rpmFile ) )
         {
             info = RpmHeaderParser.parseHeader( in );
         }
-
-        // Second pass: compute SHA-256 checksum and file size over the whole file
-        info.fileSize = Files.size( rpmFile );
+        info.fileSize = attrs.size();
         info.sha256   = sha256( rpmFile );
-        info.location = repoRoot.relativize( rpmFile ).toString().replace( '\\', '/' );
-
+        info.location = relPath;
         return info;
     }
 
-    private static String sha256( Path file ) throws IOException
+    static String sha256( Path file ) throws IOException
     {
         try
         {

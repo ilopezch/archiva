@@ -71,13 +71,18 @@ public class RpmHeaderParser
     private static final int TAG_ARCH           = 1022;
     private static final int TAG_SOURCERPM      = 1044;
     private static final int TAG_ARCHIVESIZE    = 1046;
-    private static final int TAG_PROVIDES       = 1047;
-    private static final int TAG_REQUIREFLAGS   = 1048;
-    private static final int TAG_REQUIRES       = 1049;
-    private static final int TAG_REQUIREVERSION = 1050;
-    private static final int TAG_PROVIDEFLAGS   = 1112;
-    private static final int TAG_PROVIDEVERSION = 1113;
-    private static final int TAG_BASENAMES      = 1117;
+    private static final int TAG_PROVIDES        = 1047;
+    private static final int TAG_REQUIREFLAGS    = 1048;
+    private static final int TAG_REQUIRES        = 1049;
+    private static final int TAG_REQUIREVERSION  = 1050;
+    private static final int TAG_CHANGELOGTIME   = 1080;
+    private static final int TAG_CHANGELOGNAME   = 1081;
+    private static final int TAG_CHANGELOGTEXT   = 1082;
+    private static final int TAG_PROVIDEFLAGS    = 1112;
+    private static final int TAG_PROVIDEVERSION  = 1113;
+    private static final int TAG_BASENAMES       = 1117;
+    private static final int TAG_DIRNAMES        = 1118;
+    private static final int TAG_DIRINDEXES      = 1119;
 
     /**
      * Parses the main RPM header and returns populated {@link RpmPackageInfo}.
@@ -186,10 +191,15 @@ public class RpmHeaderParser
                 case TAG_REQUIRES:      info.requireNames    = strArr( store, e.offset, e.count ); break;
                 case TAG_REQUIREVERSION:info.requireVersions = strArr( store, e.offset, e.count ); break;
                 case TAG_REQUIREFLAGS:  info.requireFlags    = i32Arr( store, e.offset, e.count ); break;
-                case TAG_PROVIDES:      info.provideNames    = strArr( store, e.offset, e.count ); break;
-                case TAG_PROVIDEVERSION:info.provideVersions = strArr( store, e.offset, e.count ); break;
-                case TAG_PROVIDEFLAGS:  info.provideFlags    = i32Arr( store, e.offset, e.count ); break;
-                case TAG_BASENAMES:     info.files           = strArr( store, e.offset, e.count ); break;
+                case TAG_PROVIDES:       info.provideNames    = strArr(   store, e.offset, e.count ); break;
+                case TAG_PROVIDEVERSION: info.provideVersions = strArr(   store, e.offset, e.count ); break;
+                case TAG_PROVIDEFLAGS:   info.provideFlags    = i32Arr(   store, e.offset, e.count ); break;
+                case TAG_BASENAMES:      info.files           = strArr(   store, e.offset, e.count ); break;
+                case TAG_DIRNAMES:       info.dirNames        = strArr(   store, e.offset, e.count ); break;
+                case TAG_DIRINDEXES:     info.dirIndexes      = i32Arr(   store, e.offset, e.count ); break;
+                case TAG_CHANGELOGTIME:  info.changelogTimes  = ui32Arr(  store, e.offset, e.count ); break;
+                case TAG_CHANGELOGNAME:  info.changelogNames  = strArr(   store, e.offset, e.count ); break;
+                case TAG_CHANGELOGTEXT:  info.changelogTexts  = strArr(   store, e.offset, e.count ); break;
                 default: break;
             }
         }
@@ -241,6 +251,14 @@ public class RpmHeaderParser
     {
         List<Integer> result = new ArrayList<>( count );
         for ( int i = 0; i < count; i++ ) result.add( store.getInt( offset + i * 4 ) );
+        return result;
+    }
+
+    private static List<Long> ui32Arr( ByteBuffer store, int offset, int count )
+    {
+        List<Long> result = new ArrayList<>( count );
+        for ( int i = 0; i < count; i++ )
+            result.add( Integer.toUnsignedLong( store.getInt( offset + i * 4 ) ) );
         return result;
     }
 

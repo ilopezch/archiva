@@ -21,32 +21,25 @@ package org.apache.archiva.rpm.repository;
 
 import org.apache.archiva.repository.ReleaseScheme;
 import org.apache.archiva.repository.RepositoryCapabilities;
-import org.apache.archiva.repository.RepositoryRequestInfo;
 import org.apache.archiva.repository.RepositoryState;
 import org.apache.archiva.repository.RepositoryType;
 import org.apache.archiva.repository.StandardCapabilities;
 import org.apache.archiva.repository.UnsupportedFeatureException;
-import org.apache.archiva.repository.base.managed.AbstractManagedRepository;
-import org.apache.archiva.repository.features.ArtifactCleanupFeature;
+import org.apache.archiva.repository.base.remote.AbstractRemoteRepository;
 import org.apache.archiva.repository.features.RepositoryFeature;
 import org.apache.archiva.repository.storage.fs.FilesystemStorage;
 
 /**
- * RPM managed repository. Stores RPM packages on the local filesystem using the
- * standard yum layout: {@code RPMS/{arch}/{name}-{version}-{release}.{arch}.rpm}.
- * Serves yum/dnf clients via {@code repodata/repomd.xml} and GPG-signed metadata.
+ * RPM remote repository (proxy cache). Fetches packages from upstream yum/dnf mirrors
+ * such as RHEL, CentOS, Fedora, or EPEL and caches them locally.
  */
-public class RpmManagedRepository extends AbstractManagedRepository
+public class RpmRemoteRepository extends AbstractRemoteRepository
 {
-    public static final String LAYOUT = "rpm-default";
-
-    private final ArtifactCleanupFeature artifactCleanupFeature = new ArtifactCleanupFeature();
-
     private static final RepositoryCapabilities CAPABILITIES = new StandardCapabilities(
         new ReleaseScheme[]{ ReleaseScheme.RELEASE },
-        new String[]{ LAYOUT },
+        new String[]{ RpmManagedRepository.LAYOUT },
         new String[]{},
-        new String[]{ ArtifactCleanupFeature.class.getName() },
+        new String[]{},
         false,
         true,
         false,
@@ -54,21 +47,11 @@ public class RpmManagedRepository extends AbstractManagedRepository
         false
     );
 
-    private String gpgKeyPath;
-    private String gpgUserId;
-
-    public RpmManagedRepository( String id, String name, FilesystemStorage storage )
+    public RpmRemoteRepository( String id, String name, FilesystemStorage storage )
     {
         super( RepositoryType.RPM, id, name, storage );
-        setLocation( storage.getRoot().getFilePath().toUri() );
         setLastState( RepositoryState.CREATED );
     }
-
-    public String getGpgKeyPath() { return gpgKeyPath; }
-    public void setGpgKeyPath( String gpgKeyPath ) { this.gpgKeyPath = gpgKeyPath; }
-
-    public String getGpgUserId() { return gpgUserId; }
-    public void setGpgUserId( String gpgUserId ) { this.gpgUserId = gpgUserId; }
 
     @Override
     public RepositoryCapabilities getCapabilities()
@@ -76,32 +59,21 @@ public class RpmManagedRepository extends AbstractManagedRepository
         return CAPABILITIES;
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
     public <T extends RepositoryFeature<T>> T getFeature( Class<T> clazz ) throws UnsupportedFeatureException
     {
-        if ( ArtifactCleanupFeature.class.equals( clazz ) )
-        {
-            return (T) artifactCleanupFeature;
-        }
         throw new UnsupportedFeatureException();
     }
 
     @Override
     public <T extends RepositoryFeature<T>> boolean supportsFeature( Class<T> clazz )
     {
-        return ArtifactCleanupFeature.class.equals( clazz );
+        return false;
     }
 
     @Override
     public boolean hasIndex()
     {
         return false;
-    }
-
-    @Override
-    public RepositoryRequestInfo getRequestInfo()
-    {
-        return new RpmRepositoryRequestInfo( this );
     }
 }

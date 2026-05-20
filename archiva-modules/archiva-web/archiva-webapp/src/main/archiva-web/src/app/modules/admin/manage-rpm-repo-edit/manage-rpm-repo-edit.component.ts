@@ -21,7 +21,7 @@ import {ActivatedRoute} from '@angular/router';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {switchMap, catchError} from 'rxjs/operators';
 import {RpmRepositoryService} from '@app/services/rpm-repository.service';
-import {RpmManagedRepository} from '@app/model/rpm-managed-repository';
+import {RpmGpgKeyInfo, RpmManagedRepository} from '@app/model/rpm-managed-repository';
 import {ToastService} from '@app/services/toast.service';
 import {ErrorResult} from '@app/model/error-result';
 
@@ -41,6 +41,11 @@ export class ManageRpmRepoEditComponent implements OnInit {
     errorResult: ErrorResult;
     result: RpmManagedRepository;
 
+    gpgKey: RpmGpgKeyInfo = null;
+    gpgKeyLoading = false;
+    gpgKeyRotating = false;
+    gpgKeyError: string = null;
+
     constructor(private route: ActivatedRoute,
                 private fb: FormBuilder,
                 private rpmService: RpmRepositoryService,
@@ -54,7 +59,9 @@ export class ManageRpmRepoEditComponent implements OnInit {
             description: [''],
             location: ['', Validators.required],
             scanned: [false],
-            scheduling_definition: ['0 0 * * * ?']
+            scheduling_definition: ['0 0 * * * ?'],
+            gpg_key_path: [''],
+            gpg_user_id: ['']
         });
 
         this.route.params.pipe(
@@ -64,6 +71,49 @@ export class ManageRpmRepoEditComponent implements OnInit {
             })
         ).subscribe((repo: RpmManagedRepository) => {
             this.repoForm.patchValue(repo);
+            this.loadGpgKey();
+        });
+    }
+
+    loadGpgKey(): void {
+        this.gpgKeyLoading = true;
+        this.gpgKeyError = null;
+        this.rpmService.getGpgKey(this.repoId).subscribe({
+            next: (info: RpmGpgKeyInfo) => {
+                this.gpgKey = info;
+                this.gpgKeyLoading = false;
+            },
+            error: (err) => {
+                this.gpgKeyError = err?.message || 'Failed to load GPG key';
+                this.gpgKeyLoading = false;
+            }
+        });
+    }
+
+    downloadPublicKey(): void {
+        if (!this.gpgKey) return;
+        const blob = new Blob([this.gpgKey.armoredPublicKey], {type: 'application/pgp-keys'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.repoId}-repokey.gpg`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    rotateGpgKey(): void {
+        if (!confirm('Generate a new GPG key? Clients will need to re-import the public key.')) return;
+        this.gpgKeyRotating = true;
+        this.gpgKeyError = null;
+        this.rpmService.rotateGpgKey(this.repoId).subscribe({
+            next: (info: RpmGpgKeyInfo) => {
+                this.gpgKey = info;
+                this.gpgKeyRotating = false;
+            },
+            error: (err) => {
+                this.gpgKeyError = err?.message || 'Key rotation failed';
+                this.gpgKeyRotating = false;
+            }
         });
     }
 

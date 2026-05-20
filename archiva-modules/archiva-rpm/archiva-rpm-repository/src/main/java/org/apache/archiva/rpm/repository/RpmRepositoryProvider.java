@@ -95,7 +95,20 @@ public class RpmRepositoryProvider implements RepositoryProvider
     @Override
     public EditableRemoteRepository createRemoteInstance( String id, String name )
     {
-        throw new UnsupportedOperationException( "RPM remote repositories not yet implemented" );
+        Path baseDir = archivaConfiguration.getRemoteRepositoryBaseDir();
+        FilesystemStorage storage;
+        try
+        {
+            storage = new FilesystemStorage( baseDir.resolve( id ), fileLockManager );
+        }
+        catch ( IOException e )
+        {
+            log.error( "Could not initialize filesystem for remote RPM repository {}", id );
+            throw new RuntimeException( e );
+        }
+        RpmRemoteRepository repo = new RpmRemoteRepository( id, name, storage );
+        registerEventHandlers( repo );
+        return repo;
     }
 
     @Override
@@ -164,6 +177,12 @@ public class RpmRepositoryProvider implements RepositoryProvider
         }
         repo.setSchedulingDefinition( cfg.getRefreshCronExpression() );
         repo.setScanned( cfg.isScanned() );
+        if ( repo instanceof RpmManagedRepository )
+        {
+            RpmManagedRepository rpmRepo = (RpmManagedRepository) repo;
+            rpmRepo.setGpgKeyPath( cfg.getGpgKeyPath() );
+            rpmRepo.setGpgUserId( cfg.getGpgUserId() );
+        }
     }
 
     @Override
@@ -175,14 +194,46 @@ public class RpmRepositoryProvider implements RepositoryProvider
     @Override
     public RemoteRepository createRemoteInstance( RemoteRepositoryConfiguration cfg ) throws RepositoryException
     {
-        throw new RepositoryException( "RPM remote repositories not yet implemented" );
+        Path baseDir = archivaConfiguration.getRemoteRepositoryBaseDir();
+        FilesystemStorage storage;
+        try
+        {
+            storage = new FilesystemStorage( baseDir.resolve( cfg.getId() ), fileLockManager );
+        }
+        catch ( IOException e )
+        {
+            throw new RepositoryException( "Cannot initialize storage for remote " + cfg.getId(), e );
+        }
+        RpmRemoteRepository repo = new RpmRemoteRepository( cfg.getId(), cfg.getName(), storage );
+        updateRemoteInstance( repo, cfg );
+        registerEventHandlers( repo );
+        return repo;
     }
 
     @Override
     public void updateRemoteInstance( EditableRemoteRepository repo, RemoteRepositoryConfiguration cfg )
         throws RepositoryException
     {
-        throw new RepositoryException( "RPM remote repositories not yet implemented" );
+        repo.setName( repo.getPrimaryLocale(), cfg.getName() );
+        repo.setDescription( repo.getPrimaryLocale(), cfg.getDescription() );
+        repo.setLayout( cfg.getLayout() );
+        repo.setCheckPath( cfg.getCheckPath() );
+        repo.setSchedulingDefinition( cfg.getRefreshCronExpression() );
+        try
+        {
+            repo.setLocation( new URI( cfg.getUrl() ) );
+        }
+        catch ( UnsupportedURIException | URISyntaxException e )
+        {
+            throw new RepositoryException( "Invalid URL for RPM remote repository: " + cfg.getUrl() );
+        }
+        repo.setTimeout( Duration.ofSeconds( cfg.getTimeout() ) );
+        if ( cfg.getUsername() != null && cfg.getPassword() != null )
+        {
+            PasswordCredentials creds = new PasswordCredentials( cfg.getUsername(),
+                cfg.getPassword().toCharArray() );
+            repo.setCredentials( creds );
+        }
     }
 
     @Override
@@ -216,7 +267,15 @@ public class RpmRepositoryProvider implements RepositoryProvider
     @Override
     public RemoteRepositoryConfiguration getRemoteConfiguration( RemoteRepository repo ) throws RepositoryException
     {
-        throw new RepositoryException( "RPM remote repositories not yet implemented" );
+        RemoteRepositoryConfiguration cfg = new RemoteRepositoryConfiguration();
+        cfg.setType( RepositoryType.RPM.name() );
+        cfg.setId( repo.getId() );
+        cfg.setName( repo.getName() );
+        cfg.setDescription( repo.getDescription() );
+        cfg.setUrl( repo.getLocation() != null ? repo.getLocation().toString() : "" );
+        cfg.setTimeout( (int) repo.getTimeout().toSeconds() );
+        cfg.setLayout( repo.getLayout() );
+        return cfg;
     }
 
     @Override
@@ -231,6 +290,12 @@ public class RpmRepositoryProvider implements RepositoryProvider
         cfg.setLayout( repo.getLayout() );
         cfg.setRefreshCronExpression( repo.getSchedulingDefinition() );
         cfg.setScanned( repo.isScanned() );
+        if ( repo instanceof RpmManagedRepository )
+        {
+            RpmManagedRepository rpmRepo = (RpmManagedRepository) repo;
+            cfg.setGpgKeyPath( rpmRepo.getGpgKeyPath() );
+            cfg.setGpgUserId( rpmRepo.getGpgUserId() );
+        }
         return cfg;
     }
 

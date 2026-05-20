@@ -102,11 +102,25 @@ public class ManagedRepositoryConfiguration
     private boolean skipPackedIndexCreation = false;
 
     /**
-     * 
+     *
      *             Need a staging repository
      *           .
      */
     private boolean stageRepoNeeded = false;
+
+    /**
+     * Path to an operator-supplied GPG secret key file (BouncyCastle PGP
+     * format).  When blank the repository auto-generates a key under
+     * .repodata/signing.pgp.
+     */
+    private String gpgKeyPath;
+
+    /**
+     * User-ID (name/email) embedded in the GPG key.  Used only when
+     * generating a new key; ignored when gpgKeyPath points to an existing
+     * key.
+     */
+    private String gpgUserId;
 
 
       //-----------/
@@ -341,12 +355,32 @@ public class ManagedRepositoryConfiguration
 
     /**
      * Set need a staging repository.
-     * 
+     *
      * @param stageRepoNeeded
      */
     public void setStageRepoNeeded( boolean stageRepoNeeded )
     {
         this.stageRepoNeeded = stageRepoNeeded;
     } //-- void setStageRepoNeeded( boolean )
+
+    public String getGpgKeyPath()
+    {
+        return this.gpgKeyPath;
+    }
+
+    public void setGpgKeyPath( String gpgKeyPath )
+    {
+        this.gpgKeyPath = gpgKeyPath;
+    }
+
+    public String getGpgUserId()
+    {
+        return this.gpgUserId;
+    }
+
+    public void setGpgUserId( String gpgUserId )
+    {
+        this.gpgUserId = gpgUserId;
+    }
 
 }

@@ -1,4 +1,4 @@
-package org.apache.archiva.rpm.repository;
+package org.apache.archiva.rpm.repository.content;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -19,40 +19,79 @@ package org.apache.archiva.rpm.repository;
  * under the License.
  */
 
-import org.apache.archiva.repository.RepositoryRequestInfo;
-import org.apache.archiva.repository.UnsupportedFeatureException;
+import org.apache.archiva.repository.RemoteRepository;
+import org.apache.archiva.repository.RemoteRepositoryContent;
 import org.apache.archiva.repository.content.ItemSelector;
 import org.apache.archiva.repository.content.LayoutException;
 import org.apache.archiva.repository.content.base.ArchivaItemSelector;
-import org.apache.archiva.repository.features.RepositoryFeature;
 
 /**
- * Maps yum/dnf request paths to RPM storage paths.
- * Repodata paths and RPM package paths are returned unchanged (they map 1:1 to storage).
+ * RPM remote repository content. Translates RPM package selectors to upstream yum/dnf mirror paths.
+ * The path structure mirrors the standard yum layout used by managed repositories.
  */
-public class RpmRepositoryRequestInfo implements RepositoryRequestInfo
+public class RpmRemoteRepositoryContent implements RemoteRepositoryContent
 {
-    private final RpmManagedRepository repository;
+    private RemoteRepository repository;
 
-    public RpmRepositoryRequestInfo( RpmManagedRepository repository )
+    public RpmRemoteRepositoryContent( RemoteRepository repository )
     {
         this.repository = repository;
     }
 
     @Override
-    public String toNativePath( String requestPath ) throws LayoutException
+    public String getId()
     {
-        return requestPath;
+        return repository.getId();
     }
 
     @Override
-    public ItemSelector toItemSelector( String requestPath ) throws LayoutException
+    public RemoteRepository getRepository()
     {
-        if ( requestPath == null || requestPath.isEmpty() )
+        return repository;
+    }
+
+    @Override
+    public void setRepository( RemoteRepository repository )
+    {
+        this.repository = repository;
+    }
+
+    @Override
+    public String toPath( ItemSelector selector )
+    {
+        String arch = selector.getNamespace();
+        String name = selector.getProjectId();
+        String version = selector.getVersion();
+
+        if ( "src".equals( arch ) )
         {
-            throw new LayoutException( "Empty RPM request path" );
+            if ( version != null && !version.isEmpty() )
+            {
+                return "SRPMS/" + name + "-" + version + ".src.rpm";
+            }
+            return "SRPMS";
         }
-        String p = requestPath.startsWith( "/" ) ? requestPath.substring( 1 ) : requestPath;
+
+        if ( arch != null && !arch.isEmpty() )
+        {
+            if ( name != null && !name.isEmpty() && version != null && !version.isEmpty() )
+            {
+                return "RPMS/" + arch + "/" + name + "-" + version + "." + arch + ".rpm";
+            }
+            return "RPMS/" + arch;
+        }
+
+        return "RPMS";
+    }
+
+    @Override
+    public ItemSelector toItemSelector( String path ) throws LayoutException
+    {
+        if ( path == null || path.isEmpty() )
+        {
+            throw new LayoutException( "Empty RPM path" );
+        }
+        String p = path.startsWith( "/" ) ? path.substring( 1 ) : path;
 
         if ( p.startsWith( "SRPMS/" ) )
         {
@@ -82,7 +121,7 @@ public class RpmRepositoryRequestInfo implements RepositoryRequestInfo
                 .build();
         }
 
-        throw new LayoutException( "Unrecognised RPM request path: " + requestPath );
+        throw new LayoutException( "Unrecognised RPM path: " + path );
     }
 
     private String extractName( String filename, String suffix )
@@ -117,48 +156,5 @@ public class RpmRepositoryRequestInfo implements RepositoryRequestInfo
             return release;
         }
         return nameVer.substring( second + 1 ) + "-" + release;
-    }
-
-    @Override
-    public boolean isMetadata( String requestPath )
-    {
-        return requestPath.contains( "repodata/" );
-    }
-
-    @Override
-    public boolean isArchetypeCatalog( String requestPath )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isSupportFile( String requestPath )
-    {
-        return requestPath.endsWith( ".asc" ) || requestPath.endsWith( ".gpg" );
-    }
-
-    @Override
-    public boolean isMetadataSupportFile( String requestPath )
-    {
-        return requestPath.endsWith( "repomd.xml.asc" );
-    }
-
-    @Override
-    public String getLayout( String requestPath )
-    {
-        return RpmManagedRepository.LAYOUT;
-    }
-
-    @Override
-    public <T extends RepositoryFeature<T>> RepositoryFeature<T> getFeature( Class<T> clazz )
-        throws UnsupportedFeatureException
-    {
-        throw new UnsupportedFeatureException();
-    }
-
-    @Override
-    public <T extends RepositoryFeature<T>> boolean supportsFeature( Class<T> clazz )
-    {
-        return false;
     }
 }

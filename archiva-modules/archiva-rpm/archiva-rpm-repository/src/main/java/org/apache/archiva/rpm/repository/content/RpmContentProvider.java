@@ -62,7 +62,12 @@ public class RpmContentProvider implements RepositoryContentProvider
     @Override
     public RemoteRepositoryContent createRemoteContent( RemoteRepository repository ) throws RepositoryException
     {
-        throw new RepositoryException( "RPM remote repositories not yet implemented" );
+        if ( !supports( repository.getType() ) )
+        {
+            throw new RepositoryException(
+                "Repository type " + repository.getType() + " is not supported by RpmContentProvider" );
+        }
+        return new RpmRemoteRepositoryContent( repository );
     }
 
     @Override
@@ -89,6 +94,10 @@ public class RpmContentProvider implements RepositoryContentProvider
         if ( repository instanceof ManagedRepository )
         {
             return (T) createManagedContent( (ManagedRepository) repository );
+        }
+        if ( repository instanceof RemoteRepository )
+        {
+            return (T) createRemoteContent( (RemoteRepository) repository );
         }
         throw new RepositoryException( "Unsupported repository class: " + repository.getClass().getName() );
     }

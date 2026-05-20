@@ -751,6 +751,24 @@
           </description>
           <defaultValue>false</defaultValue>
         </field>
+        <field>
+          <name>gpgKeyPath</name>
+          <version>1.0.0+</version>
+          <type>String</type>
+          <description>
+            Path to an operator-supplied GPG secret key file (BouncyCastle PGP format).
+            When blank the repository auto-generates a key under .repodata/signing.pgp.
+          </description>
+        </field>
+        <field>
+          <name>gpgUserId</name>
+          <version>1.0.0+</version>
+          <type>String</type>
+          <description>
+            User-ID (name/email) embedded in the GPG key.  Used only when generating
+            a new key; ignored when gpgKeyPath points to an existing key.
+          </description>
+        </field>
       </fields>
     </class>
 

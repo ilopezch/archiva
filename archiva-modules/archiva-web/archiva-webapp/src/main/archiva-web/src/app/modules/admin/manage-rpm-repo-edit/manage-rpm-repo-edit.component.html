@@ -48,10 +48,56 @@
                placeholder="{{'rpm-repo.input.scheduling_definition' | translate}}"/>
         <small class="form-text text-muted">{{'rpm-repo.input.small.scheduling_definition' | translate}}</small>
     </div>
+    <!-- GPG Key Configuration -->
+    <hr/>
+    <h5>{{'rpm-repo.gpg.head' | translate}}</h5>
+    <div class="form-group">
+        <label>{{'rpm-repo.gpg.key_path' | translate}}</label>
+        <input formControlName="gpg_key_path" class="form-control"
+               placeholder="{{'rpm-repo.gpg.key_path.placeholder' | translate}}"/>
+        <small class="form-text text-muted">{{'rpm-repo.gpg.key_path.hint' | translate}}</small>
+    </div>
+    <div class="form-group">
+        <label>{{'rpm-repo.gpg.user_id' | translate}}</label>
+        <input formControlName="gpg_user_id" class="form-control"
+               placeholder="{{'rpm-repo.gpg.user_id.placeholder' | translate}}"/>
+        <small class="form-text text-muted">{{'rpm-repo.gpg.user_id.hint' | translate}}</small>
+    </div>
+
     <button type="submit" class="btn btn-primary" [disabled]="!repoForm.valid">
         {{'rpm-repo.edit.submit' | translate}}
     </button>
 </form>
+
+<!-- GPG Key Status Panel -->
+<div class="card mt-4">
+    <div class="card-header">{{'rpm-repo.gpg.status.head' | translate}}</div>
+    <div class="card-body">
+        <div *ngIf="gpgKeyLoading" class="text-muted">{{'rpm-repo.gpg.status.loading' | translate}}</div>
+        <div *ngIf="gpgKeyError" class="alert alert-danger">{{gpgKeyError}}</div>
+        <dl *ngIf="gpgKey && !gpgKeyLoading" class="row">
+            <dt class="col-sm-3">{{'rpm-repo.gpg.status.fingerprint' | translate}}</dt>
+            <dd class="col-sm-9"><code>{{gpgKey.fingerprint}}</code></dd>
+            <dt class="col-sm-3">{{'rpm-repo.gpg.status.user_id' | translate}}</dt>
+            <dd class="col-sm-9">{{gpgKey.userId}}</dd>
+            <dt class="col-sm-3">{{'rpm-repo.gpg.status.algorithm' | translate}}</dt>
+            <dd class="col-sm-9">{{gpgKey.algorithm}} {{gpgKey.bitStrength}}-bit</dd>
+            <dt class="col-sm-3">{{'rpm-repo.gpg.status.created' | translate}}</dt>
+            <dd class="col-sm-9">{{gpgKey.created}}</dd>
+            <dt class="col-sm-3">{{'rpm-repo.gpg.status.expires' | translate}}</dt>
+            <dd class="col-sm-9">{{gpgKey.expires || ('rpm-repo.gpg.status.no_expiry' | translate)}}</dd>
+        </dl>
+        <div class="mt-2" *ngIf="gpgKey && !gpgKeyLoading">
+            <button class="btn btn-outline-secondary btn-sm mr-2" (click)="downloadPublicKey()">
+                {{'rpm-repo.gpg.action.download' | translate}}
+            </button>
+            <button class="btn btn-outline-warning btn-sm" (click)="rotateGpgKey()" [disabled]="gpgKeyRotating">
+                <span *ngIf="gpgKeyRotating" class="spinner-border spinner-border-sm mr-1"></span>
+                {{'rpm-repo.gpg.action.rotate' | translate}}
+            </button>
+        </div>
+    </div>
+</div>
 
 <ng-template #successTmpl let-data="contextData">
     {{'rpm-repo.edit.success' | translate: {id: data?.id} }}
