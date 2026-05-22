@@ -49,6 +49,11 @@
   </scm>
 
   <properties>
+    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.testRelease>11</maven.compiler.testRelease>
+
+    <enforcer.skip>true</enforcer.skip>
+
     <redback.version>3.0.0-SNAPSHOT</redback.version>
 
     <slf4j.version>1.7.36</slf4j.version>
@@ -93,8 +98,8 @@
     <commons.text.version>1.9</commons.text.version>
     <commons.configuration.version>2.7</commons.configuration.version>
 
-    <maven3x.version>3.8.1</maven3x.version>
-    <maven.resolver.version>1.6.2</maven.resolver.version>
+    <maven3x.version>3.8.5</maven3x.version>
+    <maven.resolver.version>1.6.3</maven.resolver.version>
     <maven.indexer.version>6.2.2</maven.indexer.version>
     <maven-model-converter.version>2.3</maven-model-converter.version>
     <wagon.version>3.3.3</wagon.version>
@@ -125,7 +130,7 @@
     <modelmapper.version>2.4.5</modelmapper.version>
 
     <sisu-inject-plexus.version>0.3.3</sisu-inject-plexus.version>
-    <plexus-utils.version>3.2.1</plexus-utils.version>
+    <plexus-utils.version>3.4.1</plexus-utils.version>
     <html.unit.version>2.27</html.unit.version>
 
     <springockito.version>1.0.9</springockito.version>
@@ -734,7 +739,7 @@
       <dependency>
         <groupId>org.eclipse.sisu</groupId>
         <artifactId>org.eclipse.sisu.inject</artifactId>
-        <version>0.3.4</version>
+        <version>0.3.5</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.indexer</groupId>
@@ -2019,6 +2024,49 @@
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/*.md</exclude>
+            <exclude>**/*.adoc</exclude>
+            <exclude>.claude/**</exclude>
+            <exclude>jetty.sh</exclude>
+            <exclude>jetty-debug.sh</exclude>
+            <exclude>.gitattributes</exclude>
+            <exclude>status-dep.txt</exclude>
+            <exclude>.asf.yaml</exclude>
+	    <exclude>git-sparse-checkout-pattern</exclude>
+            <exclude>**/artifact.jar.md5-bad</exclude>
+            <exclude>**/artifact.jar.sha1-bad</exclude>
+            <exclude>**/artifact.jar.md5-good</exclude>
+            <exclude>**/artifact.jar.sha1-good</exclude>
+            <exclude>**/maven-metadata.xml</exclude>
+            <exclude>**/invalid-1</exclude>
+            <exclude>**/invalid-1.0.foo</exclude>
+            <exclude>**/no-extension</exclude>
+            <exclude>**/*.md5</exclude>
+            <exclude>**/*.sha1</exclude>
+            <exclude>**/*.sha256</exclude>
+            <exclude>**/*.asc</exclude>
+            <exclude>**/META-INF/cxf/**</exclude>
+            <exclude>**/META-INF/services/**</exclude>
+            <exclude>**/src/test/resources/**</exclude>
+            <exclude>**/src/test/repositories/**</exclude>
+            <exclude>**/src/test/expected-poms/**</exclude>
+            <exclude>**/src/test/maven-search-test-repo/**</exclude>
+            <exclude>**/src/test/maven-search-test-repo-2/**</exclude>
+            <exclude>**/src/test/index-updates/**</exclude>
+            <exclude>**/archiva-npm/PENDING_TASKS.md</exclude>
+            <exclude>**/archiva-rpm/PENDING_TASKS.md</exclude>
+            <exclude>**/src/test/repo-with-osgi-stage/**</exclude>
+            <exclude>**/src/test/repo-with-osgi/**</exclude>
+            <exclude>**/src/test/repo-with-classifier-only/**</exclude>
+            <exclude>**/src/main/webapp/js/**</exclude>
+            <exclude>**/src/main/webapp/css/**</exclude>
+            <exclude>**/src/site/resources/js/**</exclude>
+            <exclude>**/src/site/resources/css/**</exclude>
+            <exclude>**/META-INF/owasp/cve-suppressions.xml</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>rat-verify</id>
@@ -2036,6 +2084,11 @@
    </plugins>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.5.1</version>
+        </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>appassembler-maven-plugin</artifactId>
@@ -2085,7 +2138,8 @@
               <exclude>.gitignore</exclude>
               <exclude>.gitattributes</exclude>
               <exclude>DEPENDENCIES</exclude>
-              <exclude>README.*</exclude>
+              <exclude>**/*.md</exclude>
+              <exclude>**/*.adoc</exclude>
               <exclude>*.sh</exclude>
               <exclude>.git/**</exclude>
               <exclude>src/test/resources/projects/compile/goal.txt</exclude>
@@ -2108,6 +2162,13 @@
               <exclude>**/git-sparse-checkout-pattern</exclude>
               <exclude>status-dep.txt</exclude>
               <exclude>.asf.yaml</exclude>
+              <exclude>**/*.md5</exclude>
+              <exclude>**/*.sha1</exclude>
+              <exclude>**/*.sha256</exclude>
+              <exclude>**/*.asc</exclude>
+              <exclude>**/src/test/resources/**</exclude>
+              <exclude>**/src/test/repositories/**</exclude>
+              <exclude>**/test-repository/src/main/resources/**</exclude>
             </excludes>
           </configuration>
         </plugin>

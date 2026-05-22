@@ -303,7 +303,7 @@ public class DefaultRpmManagedRepositoryService extends AbstractService implemen
         cfg.setDescription( dto.getDescription() );
         cfg.setLocation( dto.getLocation() );
         cfg.setScanned( dto.isScanned() );
-        cfg.setCronExpression( dto.getSchedulingDefinition() );
+        cfg.setRefreshCronExpression( dto.getSchedulingDefinition() );
         cfg.setLayout( "rpm-default" );
         cfg.setType( RepositoryType.RPM.name() );
         cfg.setReleases( true );

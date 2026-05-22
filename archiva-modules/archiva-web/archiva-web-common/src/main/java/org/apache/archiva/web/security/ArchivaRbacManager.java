@@ -34,6 +34,7 @@ import org.apache.archiva.redback.rbac.UserAssignment;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -171,6 +172,7 @@ public class ArchivaRbacManager
         return getRbacManagerForWrite( ).createRole( id, name );
     }
 
+    @Transactional
     @Override
     public Role saveRole( Role role )
         throws RbacObjectInvalidException, RbacManagerException
@@ -199,6 +201,7 @@ public class ArchivaRbacManager
         return role;
     }
 
+    @Transactional
     @Override
     public void saveRoles( Collection<Role> roles )
         throws RbacObjectInvalidException, RbacManagerException
@@ -330,6 +333,7 @@ public class ArchivaRbacManager
         return new ArrayList<>( allRoles.values() );
     }
 
+    @Transactional
     @Override
     public void removeRole( Role role )
         throws RbacObjectNotFoundException, RbacObjectInvalidException, RbacManagerException
@@ -371,6 +375,7 @@ public class ArchivaRbacManager
         return getRbacManagerForWrite().createPermission( name, operationName, resourceIdentifier );
     }
 
+    @Transactional
     @Override
     public Permission savePermission( Permission permission )
         throws RbacObjectInvalidException, RbacManagerException
@@ -468,6 +473,7 @@ public class ArchivaRbacManager
         return new ArrayList<>( allPermissions.values() );
     }
 
+    @Transactional
     @Override
     public void removePermission( Permission permission )
         throws RbacObjectNotFoundException, RbacObjectInvalidException, RbacManagerException
@@ -501,6 +507,7 @@ public class ArchivaRbacManager
         return getRbacManagerForWrite().createOperation( name );
     }
 
+    @Transactional
     @Override
     public Operation saveOperation( Operation operation )
         throws RbacObjectInvalidException, RbacManagerException
@@ -597,6 +604,7 @@ public class ArchivaRbacManager
         return new ArrayList<>( allOperations.values() );
     }
 
+    @Transactional
     @Override
     public void removeOperation( Operation operation )
         throws RbacObjectNotFoundException, RbacObjectInvalidException, RbacManagerException
@@ -630,6 +638,7 @@ public class ArchivaRbacManager
         return getRbacManagerForWrite().createResource( identifier );
     }
 
+    @Transactional
     @Override
     public Resource saveResource( Resource resource )
         throws RbacObjectInvalidException, RbacManagerException
@@ -726,6 +735,7 @@ public class ArchivaRbacManager
         return new ArrayList<>( allResources.values() );
     }
 
+    @Transactional
     @Override
     public void removeResource( Resource resource )
         throws RbacObjectNotFoundException, RbacObjectInvalidException, RbacManagerException
@@ -759,6 +769,7 @@ public class ArchivaRbacManager
         return getRbacManagerForWrite().createUserAssignment( principal );
     }
 
+    @Transactional
     @Override
     public UserAssignment saveUserAssignment( UserAssignment userAssignment )
         throws RbacObjectInvalidException, RbacManagerException
@@ -952,6 +963,7 @@ public class ArchivaRbacManager
         return allUserAssignments;
     }
 
+    @Transactional
     @Override
     public void removeUserAssignment( UserAssignment userAssignment )
         throws RbacObjectNotFoundException, RbacObjectInvalidException, RbacManagerException

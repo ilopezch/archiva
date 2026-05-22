@@ -201,6 +201,7 @@
               </filters>
               <artifactSet>
                 <excludes>
+                  <exclude>org.apache.lucene:*</exclude>
                   <exclude>org.apache.jackrabbit:jackrabbit-data</exclude>
                   <exclude>org.apache.jackrabbit:jackrabbit-jcr-commons</exclude>
                   <exclude>org.apache.jackrabbit:oak-api</exclude>

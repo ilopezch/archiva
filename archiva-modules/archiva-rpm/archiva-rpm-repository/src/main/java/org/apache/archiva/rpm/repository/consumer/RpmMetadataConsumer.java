@@ -37,7 +37,7 @@ import org.apache.archiva.rpm.repository.repodata.RpmPackageInfo;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;

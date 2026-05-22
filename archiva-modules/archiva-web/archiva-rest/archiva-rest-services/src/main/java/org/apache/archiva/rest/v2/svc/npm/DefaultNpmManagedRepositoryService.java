@@ -220,7 +220,7 @@ public class DefaultNpmManagedRepositoryService extends AbstractService implemen
         cfg.setDescription( dto.getDescription() );
         cfg.setLocation( dto.getLocation() );
         cfg.setScanned( dto.isScanned() );
-        cfg.setCronExpression( dto.getSchedulingDefinition() );
+        cfg.setRefreshCronExpression( dto.getSchedulingDefinition() );
         cfg.setLayout( "npm-default" );
         cfg.setType( RepositoryType.NPM.name() );
         cfg.setReleases( true );
