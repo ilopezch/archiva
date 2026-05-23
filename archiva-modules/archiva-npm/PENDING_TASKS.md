@@ -159,9 +159,16 @@ and PUT (publish) via `NpmRegistryServlet` at `/npm/{repoId}/...`.
 
 ## Testing
 
-- [ ] **Unit tests for `NpmRegistryServlet`** — mock `RepositoryRegistry`, test all
+- [x] **Unit tests for `NpmRegistryServlet`** — mock `RepositoryRegistry`, test all
   routes (GET metadata, GET tarball, PUT publish, 404 paths).
-- [ ] **Unit tests for `NpmManagedRepositoryContent.toPath(ItemSelector)`** — cover
+  Implemented in `NpmRegistryServletTest` (21 tests) covering `NpmRequest.parse()`
+  for all URL patterns and servlet routing (400/404 cases) via reflection-injected mocks.
+
+- [x] **Unit tests for `NpmManagedRepositoryContent.toPath(ItemSelector)`** — cover
   scoped and unscoped packages.
+  Implemented in `NpmManagedRepositoryContentTest` (19 tests) covering `toPath()`,
+  `toItemSelector()`, error cases, and round-trip validation.
+
 - [ ] **Integration test** — stand up Archiva with an NPM managed repo and run
   `npm install` / `npm publish` against it.
+  (Requires external npm tooling and running Archiva instance; deferred to CI environment.)

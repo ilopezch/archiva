@@ -203,11 +203,22 @@ V2 REST CRUD API, and Angular admin UI scaffolding.
 
 ## Testing
 
-- [ ] **Unit tests for `RpmHeaderParser`** — fixture RPMs covering epoch,
+- [x] **Unit tests for `RpmHeaderParser`** — fixture RPMs covering epoch,
   requires/provides arrays, source RPMs, and noarch packages.
-- [ ] **Unit tests for `PrimaryXmlBuilder`** — verify XML output against
+  Implemented in `RpmHeaderParserTest` (12 tests) using `RpmTestFixtureBuilder`
+  to construct synthetic RPM binaries without real packages.
+
+- [x] **Unit tests for `PrimaryXmlBuilder`** — verify XML output against
   createrepo-c output for the same package.
-- [ ] **Unit tests for `RpmManagedRepositoryContent.toPath/toItemSelector`**
+  Implemented in `PrimaryXmlBuilderTest`.
+
+- [x] **Unit tests for `RpmManagedRepositoryContent.toPath/toItemSelector`**
+  Implemented in `RpmManagedRepositoryContentTest` (22 tests) covering binary RPMs,
+  noarch, source RPMs, hyphenated names, error cases, and round-trip validation.
+
 - [ ] **Integration test** — stand up Archiva with an RPM managed repo,
   upload a package via PUT, then run `dnf install` pointing at it.
+  (Requires external dnf tooling; deferred to CI environment.)
+
 - [ ] **Angular E2E tests** — create/edit/delete an RPM repo via the UI.
+  (Requires running Archiva instance and browser driver; deferred to E2E CI job.)
