@@ -66,6 +66,10 @@ public class AuditInterceptor extends AbstractEventManager implements ContainerR
     @Override
     public void filter( ContainerRequestContext requestContext, ContainerResponseContext responseContext ) throws IOException
     {
+        if ( resourceInfo.getResourceClass( ) == null || resourceInfo.getResourceMethod( ) == null )
+        {
+            return;
+        }
         RestResponseEvent evt = new RestResponseEvent( RestResponseEvent.AFTER,
             this, requestContext.getUriInfo( ).getPath( ), resourceInfo.getResourceClass( ).getName( ), resourceInfo.getResourceMethod( ).getName( )
             , requestContext.getMethod( ), responseContext.getStatus( ), requestContext.getUriInfo( ).getPathParameters( ) );
@@ -76,6 +80,10 @@ public class AuditInterceptor extends AbstractEventManager implements ContainerR
     @Override
     public void filter( ContainerRequestContext requestContext ) throws IOException
     {
+        if ( resourceInfo.getResourceClass( ) == null || resourceInfo.getResourceMethod( ) == null )
+        {
+            return;
+        }
         RestRequestEvent evt = new RestRequestEvent( RestRequestEvent.BEFORE, this,
             requestContext.getUriInfo().getPath(), resourceInfo.getResourceClass().getName(),  resourceInfo.getResourceMethod().getName()
             , requestContext.getMethod(), requestContext.getUriInfo().getPathParameters() );
