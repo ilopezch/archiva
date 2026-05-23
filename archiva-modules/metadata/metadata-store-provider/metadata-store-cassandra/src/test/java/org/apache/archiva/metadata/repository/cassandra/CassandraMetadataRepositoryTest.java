@@ -27,7 +27,6 @@ import org.apache.archiva.metadata.repository.MetadataService;
 import org.apache.archiva.metadata.repository.RepositorySession;
 import org.apache.archiva.metadata.repository.RepositorySessionFactory;
 import org.apache.archiva.metadata.repository.cassandra.model.ProjectVersionMetadataModel;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,9 +35,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import javax.inject.Inject;
@@ -61,6 +64,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Olivier Lamy
  */
+@Testcontainers( disabledWithoutDocker = true )
 @ExtendWith( SpringExtension.class )
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 @ContextConfiguration( locations = {"classpath*:/META-INF/spring-context.xml"} )
@@ -80,17 +84,20 @@ public class CassandraMetadataRepositoryTest
 
     RepositorySession session;
 
+    @Container
     private static final CassandraContainer CASSANDRA =
             new CassandraContainer(DockerImageName.parse("cassandra")
                     .withTag(System.getProperty("cassandraVersion","3.11.2")));
 
-    // because of @ExtendWith( SpringExtension.class ) @BeforeAll will not be executed before spring resolution so need to use this...
     static {
-        LOGGER.info("initCassandra");
         CASSANDRA.withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("org.apache.archiva.metadata.repository.cassandra.logs")));
-        CASSANDRA.start();
-        System.setProperty("cassandra.host", CASSANDRA.getHost());
-        System.setProperty("cassandra.port", CASSANDRA.getMappedPort(9042).toString());
+    }
+
+    @DynamicPropertySource
+    static void cassandraProperties( DynamicPropertyRegistry registry )
+    {
+        registry.add( "cassandra.host", CASSANDRA::getHost );
+        registry.add( "cassandra.port", () -> CASSANDRA.getMappedPort( 9042 ).toString() );
     }
 
     long cTime;
@@ -108,12 +115,6 @@ public class CassandraMetadataRepositoryTest
     protected MetadataRepository getRepository( )
     {
         return cmr;
-    }
-
-    @AfterAll
-    public static void stopCassandra()
-            throws Exception {
-        CASSANDRA.close();
     }
 
     @BeforeEach
