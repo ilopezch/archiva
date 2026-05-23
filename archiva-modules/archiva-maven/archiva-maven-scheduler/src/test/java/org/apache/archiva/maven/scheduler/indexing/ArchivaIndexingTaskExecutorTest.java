@@ -41,10 +41,10 @@ import org.apache.maven.index.expr.StringSearchExpression;
 import org.apache.maven.index.updater.DefaultIndexUpdater;
 import org.apache.maven.index.updater.IndexUpdateRequest;
 import org.apache.maven.index.updater.IndexUpdater;
-import org.apache.maven.index_shaded.lucene.search.BooleanClause;
-import org.apache.maven.index_shaded.lucene.search.BooleanQuery;
-import org.apache.maven.index_shaded.lucene.search.IndexSearcher;
-import org.apache.maven.index_shaded.lucene.search.TopDocs;
+import org.apache.maven.index.shaded.org.apache.lucene.search.BooleanClause;
+import org.apache.maven.index.shaded.org.apache.lucene.search.BooleanQuery;
+import org.apache.maven.index.shaded.org.apache.lucene.search.IndexSearcher;
+import org.apache.maven.index.shaded.org.apache.lucene.search.TopDocs;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
@@ -208,7 +208,7 @@ public class ArchivaIndexingTaskExecutorTest
         assertTrue( Files.exists(basePath.resolve(".index" )) );
 
         // should only return 1 hit!
-        assertEquals( 1, topDocs.totalHits );
+        assertEquals( 1, topDocs.totalHits.value );
     }
 
     @Test

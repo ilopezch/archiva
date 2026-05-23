@@ -44,7 +44,7 @@ import org.apache.maven.index.Scanner;
 import org.apache.maven.index.ScanningRequest;
 import org.apache.maven.index.ScanningResult;
 import org.apache.maven.index.context.IndexingContext;
-import org.apache.maven.index_shaded.lucene.index.IndexUpgrader;
+import org.apache.maven.index.shaded.org.apache.lucene.index.IndexUpgrader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;

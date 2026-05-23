@@ -139,8 +139,32 @@ public class LatinEntityResolutionReader
         // without an XML declaration (no-prolog files).
         if ( !done && !hasXmlProlog( line ) )
         {
-            while ( !done && isLeadingComment( line ) )
+            boolean inComment = false;
+            while ( !done )
             {
+                String trimmed = line.trim();
+                if ( !inComment )
+                {
+                    if ( trimmed.startsWith( "<!--" ) )
+                    {
+                        inComment = true;
+                        if ( trimmed.contains( "-->" ) )
+                        {
+                            inComment = false;
+                        }
+                    }
+                    else if ( !trimmed.isEmpty() )
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    if ( trimmed.contains( "-->" ) )
+                    {
+                        inComment = false;
+                    }
+                }
                 line = this.originalReader.readLine();
                 done = ( line == null );
             }
@@ -179,12 +203,6 @@ public class LatinEntityResolutionReader
     {
         String trimmed = line.trim();
         return trimmed.startsWith( "<?xml" );
-    }
-
-    private boolean isLeadingComment( String line )
-    {
-        String trimmed = line.trim();
-        return trimmed.startsWith( "<!--" );
     }
 
     private String expandLine( String line )

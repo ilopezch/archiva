@@ -30,9 +30,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.zip.ZipOutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -791,45 +793,49 @@ public class MavenRepositorySearchTest
     public void nolimitedResult()
         throws Exception
     {
-
-        Path repo = Paths.get("target/repo-release-index-test/repo-release");
+        Path repoDir = Paths.get( org.apache.archiva.common.utils.FileUtils.getBasedir(), "target/repos", REPO_RELEASE );
+        Path orgExampleDir = repoDir.resolve( "org/example" );
         try {
-            Path indexDirectory = repo.resolve(".indexer");
-            Path zipFile = Paths.get(Thread.currentThread().getContextClassLoader().getResource("repo-release.zip").toURI());
-            FileUtils.unzip(zipFile, repo.getParent());
-//            IndexUpgrader.main(new String[]{indexDirectory.toAbsolutePath().toString(), "-delete-prior-commits"});
-            createIndex(REPO_RELEASE, Collections.emptyList(), false, indexDirectory, false);
+            List<Path> jarFiles = new ArrayList<>();
+            for ( int i = 1; i <= 255; i++ )
+            {
+                Path artifactDir = orgExampleDir.resolve( "artifact-" + i + "/1.0" );
+                Files.createDirectories( artifactDir );
+                Path jarFile = artifactDir.resolve( "artifact-" + i + "-1.0.jar" );
+                try ( ZipOutputStream zos = new ZipOutputStream( Files.newOutputStream( jarFile ) ) )
+                {
+                    // empty JAR — coordinates come from the path structure
+                }
+                jarFiles.add( jarFile );
+            }
 
-//        indexer.addIndexingContext( REPO_RELEASE, REPO_RELEASE, repo.toFile(), indexDirectory.toFile(),
-//                                         repo.toUri().toURL().toExternalForm(),
-//                                         indexDirectory.toUri().toURL().toString(), indexCreators );
+            createIndex( REPO_RELEASE, jarFiles, false, null, false );
 
+            SearchResultLimits limits = new SearchResultLimits( SearchResultLimits.ALL_PAGES );
+            limits.setPageSize( 300 );
 
-            SearchResultLimits limits = new SearchResultLimits(SearchResultLimits.ALL_PAGES);
-            limits.setPageSize(300);
+            when( archivaConfig.getConfiguration() ).thenReturn( config );
 
-            // when( archivaConfig.getDefaultLocale() ).thenReturn( Locale.getDefault( ) );
-            when(archivaConfig.getConfiguration()).thenReturn(config);
+            SearchResults searchResults = search.search( null, Arrays.asList( REPO_RELEASE ),
+                "org.example", limits, Collections.emptyList() );
 
-            SearchResults searchResults = search.search(null, Arrays.asList(REPO_RELEASE), //
-                    "org.example", limits, //
-                    Collections.emptyList());
+            log.info( "results: {}", searchResults.getHits().size() );
 
-            log.info("results: {}", searchResults.getHits().size());
-
-            assertEquals(255, searchResults.getHits().size());
+            assertEquals( 255, searchResults.getHits().size() );
 
             SearchFields searchFields = new SearchFields();
-            searchFields.setGroupId("org.example");
-            searchFields.setRepositories(Arrays.asList(REPO_RELEASE));
+            searchFields.setGroupId( "org.example" );
+            searchFields.setRepositories( Arrays.asList( REPO_RELEASE ) );
 
-            searchResults = search.search(null, searchFields, limits);
+            searchResults = search.search( null, searchFields, limits );
 
-            log.info("results: {}", searchResults.getHits().size());
+            log.info( "results: {}", searchResults.getHits().size() );
 
-            assertEquals(255, searchResults.getHits().size());
-        } finally {
-            FileUtils.deleteQuietly(repo);
+            assertEquals( 255, searchResults.getHits().size() );
+        }
+        finally
+        {
+            FileUtils.deleteQuietly( orgExampleDir );
         }
     }
 }

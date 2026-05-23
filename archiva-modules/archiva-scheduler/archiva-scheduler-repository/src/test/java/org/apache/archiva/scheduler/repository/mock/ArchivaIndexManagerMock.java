@@ -58,7 +58,7 @@ import org.apache.maven.index.packer.IndexPacker;
 import org.apache.maven.index.packer.IndexPackingRequest;
 import org.apache.maven.index.updater.IndexUpdateRequest;
 import org.apache.maven.index.updater.ResourceFetcher;
-import org.apache.maven.index_shaded.lucene.index.IndexFormatTooOldException;
+import org.apache.maven.index.shaded.org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.maven.wagon.ConnectionException;
 import org.apache.maven.wagon.ResourceDoesNotExistException;
 import org.apache.maven.wagon.StreamWagon;
