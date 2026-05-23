@@ -29,6 +29,7 @@ import org.apache.archiva.redback.users.UserNotFoundException;
 import org.apache.archiva.redback.users.UserQuery;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -94,6 +95,7 @@ public class ArchivaConfigurableUsersManager
         return this.useUsersCache;
     }
 
+    @Transactional
     @Override
     public User addUser( User user )
         throws UserManagerException
@@ -108,6 +110,7 @@ public class ArchivaConfigurableUsersManager
         return user;
     }
 
+    @Transactional
     @Override
     public void addUserUnchecked( User user )
         throws UserManagerException
@@ -160,6 +163,7 @@ public class ArchivaConfigurableUsersManager
     }
 
 
+    @Transactional
     @Override
     public void deleteUser( String username )
         throws UserNotFoundException, UserManagerException
@@ -188,6 +192,7 @@ public class ArchivaConfigurableUsersManager
         }
     }
 
+    @Transactional
     @Override
     public void eraseDatabase()
     {
@@ -386,6 +391,7 @@ public class ArchivaConfigurableUsersManager
         return readOnly;
     }
 
+    @Transactional
     @Override
     public User updateUser( User user )
         throws UserNotFoundException, UserManagerException
@@ -403,6 +409,7 @@ public class ArchivaConfigurableUsersManager
         return user;
     }
 
+    @Transactional
     @Override
     public User updateUser( User user, boolean passwordChangeRequired )
         throws UserNotFoundException, UserManagerException
@@ -423,6 +430,7 @@ public class ArchivaConfigurableUsersManager
         log.debug( "setUserManagerImpl cannot be used in this implementation" );
     }
 
+    @Transactional
     @Override
     public User createGuestUser()
         throws UserManagerException
