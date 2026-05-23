@@ -135,6 +135,17 @@ public class LatinEntityResolutionReader
         String line = this.originalReader.readLine();
         boolean done = ( line == null );
 
+        // Skip leading XML comments (e.g., license headers) only for files
+        // without an XML declaration (no-prolog files).
+        if ( !done && !hasXmlProlog( line ) )
+        {
+            while ( !done && isLeadingComment( line ) )
+            {
+                line = this.originalReader.readLine();
+                done = ( line == null );
+            }
+        }
+
         while ( !done )
         {
             if ( buf == null )
@@ -162,6 +173,18 @@ public class LatinEntityResolutionReader
         }
 
         return buf;
+    }
+
+    private boolean hasXmlProlog( String line )
+    {
+        String trimmed = line.trim();
+        return trimmed.startsWith( "<?xml" );
+    }
+
+    private boolean isLeadingComment( String line )
+    {
+        String trimmed = line.trim();
+        return trimmed.startsWith( "<!--" );
     }
 
     private String expandLine( String line )

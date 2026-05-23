@@ -60,9 +60,7 @@
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
           <configuration>
-            <excludes>
-              <exclude>src/test/examples/**</exclude>
-            </excludes>
+                <excludesFile>${basedir}/rat-excludes.txt</excludesFile>
           </configuration>
         </plugin>
       </plugins>

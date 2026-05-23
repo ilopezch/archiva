@@ -1,0 +1,6 @@
+src/test/examples/no-prolog-basic.xml
+src/test/examples/no-prolog-with-entities.xml
+src/test/examples/no-prolog-with-utf8.xml
+src/test/examples/prolog-with-utf8.xml
+src/test/examples/commons-codec-1.2.pom
+rat-excludes.txt

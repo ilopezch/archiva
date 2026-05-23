@@ -2168,6 +2168,7 @@
               <exclude>**/*.asc</exclude>
               <exclude>**/src/test/resources/**</exclude>
               <exclude>**/src/test/repositories/**</exclude>
+	      <exclude>**/src/test/examples/**</exclude>
               <exclude>**/test-repository/src/main/resources/**</exclude>
             </excludes>
           </configuration>
