@@ -176,7 +176,7 @@ public class RemoteRepositoriesServiceTest
 
             service.addRemoteRepository(getRemoteRepository());
 
-            assertTrue(service.checkRemoteConnectivity("id-new").isSuccess());
+            assertTrue(service.checkRemoteConnectivity("id-new"));
         } finally {
             removeRemoteRepositories("id-new");
         }
@@ -198,7 +198,7 @@ public class RemoteRepositoriesServiceTest
 
             service.addRemoteRepository(getRemoteMavenRepository());
 
-            assertTrue(service.checkRemoteConnectivity("id-maven1").isSuccess());
+            assertTrue(service.checkRemoteConnectivity("id-maven1"));
         } finally {
             removeRemoteRepositories("id-maven1");
         }
@@ -222,7 +222,7 @@ public class RemoteRepositoriesServiceTest
 
             service.addRemoteRepository(getRemoteOracleRepository());
 
-            assertTrue(service.checkRemoteConnectivity("id-oracle").isSuccess());
+            assertTrue(service.checkRemoteConnectivity("id-oracle"));
         } finally {
             removeRemoteRepositories("id-oracle");
         }
