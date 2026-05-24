@@ -1,0 +1,70 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<app-paginated-entities [service]="service" pageSize="10"
+                        [(sortField)]="sortField" [(sortOrder)]="sortOrder"
+                        [id]="'npmRemoteRepoList'" #parent>
+
+    <ng-container *ngIf="parent.items$ | async as itemLoader">
+        <ng-template [ngIf]="itemLoader.loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </ng-template>
+    </ng-container>
+
+    <ng-container *ngIf="parent.items$ | stripLoading | async as repos">
+        <table class="table table-striped table-bordered">
+            <thead class="thead-light">
+            <tr sorted [sortFieldEmitter]="parent.sortFieldChange"
+                [sortOrderEmitter]="parent.sortOrderChange" [toggleObserver]="parent">
+                <app-th-sorted [fieldArray]="['id']" contentText="npm-remote-repo.attributes.id"></app-th-sorted>
+                <app-th-sorted [fieldArray]="['name']" contentText="npm-remote-repo.attributes.name"></app-th-sorted>
+                <app-th-sorted [fieldArray]="['location']" contentText="npm-remote-repo.attributes.location"></app-th-sorted>
+                <th>{{'headers.action' | translate}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let repo of repos.data">
+                <td>{{repo.id}}</td>
+                <td>{{repo.name}}</td>
+                <td>{{repo.location}}</td>
+                <td>
+                    <a [routerLink]="['..', 'edit', repo.id]"
+                       [attr.title]="'npm-remote-repo.edit.head' | translate">
+                        <span class="fas fa-edit"></span>
+                    </a>
+                    &nbsp;&nbsp;
+                    <a href="#" (click)="deleteRepository(repo); $event.preventDefault()"
+                       [attr.title]="'npm-remote-repo.delete.title' | translate">
+                        <span class="fas fa-trash"></span>
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </ng-container>
+
+</app-paginated-entities>
+
+<ng-template #deletedTmpl let-repo>
+    {{'npm-remote-repo.delete.success' | translate : {id: repo.id} }}
+</ng-template>
+<ng-template #errorTmpl let-messages="error_messages">
+    <p *ngFor="let m of messages">{{m.message}}</p>
+</ng-template>

@@ -51,7 +51,9 @@ const routes: Routes = [
         path: 'admin', component: HomeComponent, canActivate: [Guard], data: {perm: 'menu.admin.section'},
         children: [
             {path: 'npm-repositories', loadChildren: () => import('@app/modules/admin/npm-repository.module').then(m => m.NpmRepositoryModule)},
+            {path: 'npm-remote-repositories', loadChildren: () => import('@app/modules/admin/npm-remote-repository.module').then(m => m.NpmRemoteRepositoryModule)},
             {path: 'rpm-repositories', loadChildren: () => import('@app/modules/admin/rpm-repository.module').then(m => m.RpmRepositoryModule)},
+            {path: 'rpm-remote-repositories', loadChildren: () => import('@app/modules/admin/rpm-remote-repository.module').then(m => m.RpmRemoteRepositoryModule)},
         ]
     },
 

@@ -22,6 +22,7 @@ import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {ArchivaRequestService} from './archiva-request.service';
 import {NpmManagedRepository} from '@app/model/npm-managed-repository';
+import {NpmRemoteRepository} from '@app/model/npm-remote-repository';
 import {PagedResult} from '@app/model/paged-result';
 import {ErrorResult} from '@app/model/error-result';
 
@@ -31,6 +32,7 @@ import {ErrorResult} from '@app/model/error-result';
 export class NpmRepositoryService {
 
     private readonly BASE = 'repositories/npm/managed';
+    private readonly REMOTE_BASE = 'repositories/npm/remote';
 
     constructor(private rest: ArchivaRequestService) {
     }
@@ -71,6 +73,49 @@ export class NpmRepositoryService {
     deleteRepository(id: string, deleteContent: boolean = false): Observable<boolean> {
         return this.rest.executeResponseCall<boolean>(
             'delete', 'archiva', `${this.BASE}/${id}`, {deleteContent: deleteContent}
+        ).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error))),
+            map((response: HttpResponse<boolean>) => response.status === 200)
+        );
+    }
+
+    queryRemote(searchTerm: string, offset: number, limit: number,
+                orderBy: string[], order: string): Observable<PagedResult<NpmRemoteRepository>> {
+        return this.rest.executeRestCall<PagedResult<NpmRemoteRepository>>('get', 'archiva', this.REMOTE_BASE, {
+            q: searchTerm,
+            offset: offset,
+            limit: limit,
+            orderBy: orderBy,
+            order: order
+        });
+    }
+
+    getRemoteRepository(id: string): Observable<NpmRemoteRepository> {
+        return this.rest.executeRestCall<NpmRemoteRepository>('get', 'archiva', `${this.REMOTE_BASE}/${id}`, null).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error)))
+        );
+    }
+
+    addRemoteRepository(repo: NpmRemoteRepository): Observable<NpmRemoteRepository> {
+        return this.rest.executeResponseCall<NpmRemoteRepository>('post', 'archiva', this.REMOTE_BASE, repo).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error))),
+            map((response: HttpResponse<NpmRemoteRepository>) => response.body)
+        );
+    }
+
+    updateRemoteRepository(id: string, repo: NpmRemoteRepository): Observable<NpmRemoteRepository> {
+        return this.rest.executeRestCall<NpmRemoteRepository>('put', 'archiva', `${this.REMOTE_BASE}/${id}`, repo).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error)))
+        );
+    }
+
+    deleteRemoteRepository(id: string): Observable<boolean> {
+        return this.rest.executeResponseCall<boolean>(
+            'delete', 'archiva', `${this.REMOTE_BASE}/${id}`, null
         ).pipe(
             catchError((error: HttpErrorResponse) =>
                 throwError(this.rest.getTranslatedErrorResult(error))),

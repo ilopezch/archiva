@@ -22,6 +22,7 @@ import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {ArchivaRequestService} from './archiva-request.service';
 import {RpmGpgKeyInfo, RpmManagedRepository} from '@app/model/rpm-managed-repository';
+import {RpmRemoteRepository} from '@app/model/rpm-remote-repository';
 import {PagedResult} from '@app/model/paged-result';
 
 @Injectable({
@@ -30,6 +31,7 @@ import {PagedResult} from '@app/model/paged-result';
 export class RpmRepositoryService {
 
     private readonly BASE = 'repositories/rpm/managed';
+    private readonly REMOTE_BASE = 'repositories/rpm/remote';
 
     constructor(private rest: ArchivaRequestService) {
     }
@@ -88,6 +90,49 @@ export class RpmRepositoryService {
         return this.rest.executeRestCall<RpmGpgKeyInfo>('post', 'archiva', `${this.BASE}/${id}/gpgkey/rotate`, null).pipe(
             catchError((error: HttpErrorResponse) =>
                 throwError(this.rest.getTranslatedErrorResult(error)))
+        );
+    }
+
+    queryRemote(searchTerm: string, offset: number, limit: number,
+                orderBy: string[], order: string): Observable<PagedResult<RpmRemoteRepository>> {
+        return this.rest.executeRestCall<PagedResult<RpmRemoteRepository>>('get', 'archiva', this.REMOTE_BASE, {
+            q: searchTerm,
+            offset: offset,
+            limit: limit,
+            orderBy: orderBy,
+            order: order
+        });
+    }
+
+    getRemoteRepository(id: string): Observable<RpmRemoteRepository> {
+        return this.rest.executeRestCall<RpmRemoteRepository>('get', 'archiva', `${this.REMOTE_BASE}/${id}`, null).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error)))
+        );
+    }
+
+    addRemoteRepository(repo: RpmRemoteRepository): Observable<RpmRemoteRepository> {
+        return this.rest.executeResponseCall<RpmRemoteRepository>('post', 'archiva', this.REMOTE_BASE, repo).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error))),
+            map((response: HttpResponse<RpmRemoteRepository>) => response.body)
+        );
+    }
+
+    updateRemoteRepository(id: string, repo: RpmRemoteRepository): Observable<RpmRemoteRepository> {
+        return this.rest.executeRestCall<RpmRemoteRepository>('put', 'archiva', `${this.REMOTE_BASE}/${id}`, repo).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error)))
+        );
+    }
+
+    deleteRemoteRepository(id: string): Observable<boolean> {
+        return this.rest.executeResponseCall<boolean>(
+            'delete', 'archiva', `${this.REMOTE_BASE}/${id}`, null
+        ).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error))),
+            map((response: HttpResponse<boolean>) => response.status === 200)
         );
     }
 }

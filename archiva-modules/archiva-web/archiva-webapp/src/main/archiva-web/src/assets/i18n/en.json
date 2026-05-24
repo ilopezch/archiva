@@ -419,5 +419,118 @@
         "pattern": "ID may only contain letters, digits, dots, hyphens and underscores."
       }
     }
+  },
+  "npm-remote-repo": {
+    "list": {
+      "head": "List"
+    },
+    "add": {
+      "head": "Add Repository",
+      "submit": "Create Repository",
+      "success": "NPM remote repository '{id}' was created successfully.",
+      "error": {
+        "title": "Failed to create repository"
+      }
+    },
+    "edit": {
+      "head": "Edit Repository",
+      "submit": "Save Changes",
+      "success": "NPM remote repository '{id}' was updated successfully.",
+      "error": {
+        "title": "Failed to update repository"
+      }
+    },
+    "delete": {
+      "title": "Delete repository",
+      "success": "NPM remote repository '{id}' was deleted."
+    },
+    "attributes": {
+      "id": "Repository ID",
+      "name": "Name",
+      "description": "Description",
+      "location": "Registry URL",
+      "login_user": "Username",
+      "login_password": "Password",
+      "check_path": "Check Path",
+      "timeout_ms": "Timeout (ms)"
+    },
+    "input": {
+      "id": "e.g. npmjs-central",
+      "name": "e.g. npm Central Mirror",
+      "description": "Optional description",
+      "location": "https://registry.npmjs.org",
+      "login_user": "Optional username",
+      "login_password": "Optional password",
+      "check_path": "Optional health check path",
+      "timeout_ms": "60000",
+      "small": {
+        "location": "URL of the upstream NPM registry, e.g. https://registry.npmjs.org"
+      }
+    },
+    "error": {
+      "id": {
+        "pattern": "ID may only contain letters, digits, dots, hyphens and underscores."
+      },
+      "timeout_ms": {
+        "min": "Timeout must be at least 1000 ms."
+      }
+    }
+  },
+  "rpm-remote-repo": {
+    "list": {
+      "head": "List"
+    },
+    "add": {
+      "head": "Add Repository",
+      "submit": "Create Repository",
+      "success": "RPM remote repository '{id}' was created successfully.",
+      "error": {
+        "title": "Failed to create repository"
+      }
+    },
+    "edit": {
+      "head": "Edit Repository",
+      "submit": "Save Changes",
+      "success": "RPM remote repository '{id}' was updated successfully.",
+      "error": {
+        "title": "Failed to update repository"
+      }
+    },
+    "delete": {
+      "title": "Delete repository",
+      "success": "RPM remote repository '{id}' was deleted."
+    },
+    "attributes": {
+      "id": "Repository ID",
+      "name": "Name",
+      "description": "Description",
+      "location": "Repository URL",
+      "login_user": "Username",
+      "login_password": "Password",
+      "check_path": "Check Path",
+      "timeout_ms": "Timeout (ms)"
+    },
+    "input": {
+      "id": "e.g. centos-stream-baseos",
+      "name": "e.g. CentOS Stream BaseOS Mirror",
+      "description": "Optional description",
+      "location": "https://mirror.example.com/centos/baseos",
+      "login_user": "Optional username",
+      "login_password": "Optional password",
+      "check_path": "repodata/repomd.xml",
+      "timeout_ms": "60000",
+      "small": {
+        "location": "URL of the upstream RPM repository (yum/dnf compatible)",
+        "check_path": "Path used to verify repository connectivity, e.g. repodata/repomd.xml"
+      }
+    },
+    "error": {
+      "id": {
+        "pattern": "ID may only contain letters, digits, dots, hyphens and underscores."
+      },
+      "timeout_ms": {
+        "min": "Timeout must be at least 1000 ms."
+      }
+    }
   }
 }
