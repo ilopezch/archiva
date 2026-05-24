@@ -368,6 +368,20 @@ public class DefaultArchivaAdministrationService
     }
 
     @Override
+    public Boolean isRegistrationDisabled()
+        throws ArchivaRestServiceException
+    {
+        try
+        {
+            return archivaAdministration.getUiConfiguration().isDisableRegistration();
+        }
+        catch ( RepositoryAdminException e )
+        {
+            throw new ArchivaRestServiceException( e.getMessage(), e );
+        }
+    }
+
+    @Override
     public NetworkConfiguration getNetworkConfiguration()
         throws ArchivaRestServiceException
     {

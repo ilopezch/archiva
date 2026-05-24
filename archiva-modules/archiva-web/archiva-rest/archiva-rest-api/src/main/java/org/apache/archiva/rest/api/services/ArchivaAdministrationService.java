@@ -230,6 +230,13 @@ public interface ArchivaAdministrationService
         throws ArchivaRestServiceException;
 
 
+    @Path( "registrationDisabled" )
+    @GET
+    @Produces( {MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML} )
+    @RedbackAuthorization( noRestriction = true, noPermission = true )
+    Boolean isRegistrationDisabled( )
+        throws ArchivaRestServiceException;
+
     @Path( "getNetworkConfiguration" )
     @GET
     @Produces( {MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML} )
