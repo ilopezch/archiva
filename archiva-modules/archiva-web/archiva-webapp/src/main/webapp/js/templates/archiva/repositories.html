@@ -1722,3 +1722,299 @@
 
   </div>
 </script>
+
+<!-- NPM repositories -->
+
+<script id="npmRepositoriesMain" type="text/html">
+  <div class="page-header">
+    <h2><img src="images/system-file-manager-32-32.png"/>${$.i18n.prop('npm.repositories.title')}</h2>
+  </div>
+
+  <ul id="npm-repositories-tabs" class="nav nav-tabs">
+    <li class="active" id="npm-repositories-view-li">
+      <a data-toggle="tab" href="#npm-repositories-view" id="npm-repositories-view-a">${$.i18n.prop('npm.repositories.grid.tab.title')}</a>
+    </li>
+    <li id="npm-repository-edit-li">
+      <a data-toggle="tab" href="#npm-repository-edit">${$.i18n.prop('add')}</a>
+    </li>
+  </ul>
+  <div id="npm-repositories-tabs-content" class="tab-content">
+    <div id="npm-repositories-view" class="tab-pane active">
+      <table class="table table-striped table-bordered" id="npm-repositories-table"
+             data-bind="simpleGrid: gridViewModel,simpleGridTemplate:'ko_npm-repositoriesGrid',pageLinksId:'npm-repositoriesPagination',data:'npmRepositories'">
+      </table>
+      <div id="npm-repositoriesPagination"></div>
+    </div>
+    <div id="npm-repository-edit" class="tab-pane" data-bind='template:{name:"npm-repository-edit-tmpl"}'>
+    </div>
+  </div>
+</script>
+
+<script id='ko_npm-repositoriesGrid' type='text/html'>
+  <thead>
+  <tr>
+    {{each(i, columnDefinition) columns}}
+    <th title="${ columnDefinition.title }">${ columnDefinition.headerText }</th>
+    {{/each}}
+    <th>${$.i18n.prop('scanned')}</th>
+    <th>${$.i18n.prop('edit')}</th>
+    <th>${$.i18n.prop('delete')}</th>
+  </tr>
+  </thead>
+  <tbody>
+  {{each(i, row) itemsOnCurrentPage()}}
+  <tr>
+    {{each(j, columnDefinition) columns}}
+    <td>
+      ${ typeof columnDefinition.rowText == 'function' ? columnDefinition.rowText(row) : row[columnDefinition.rowText] }
+    </td>
+    {{/each}}
+    <td>
+      {{if row.scanned() == true}}
+      <img src="images/weather-clear-22-22.png" title="${$.i18n.prop('scanned')}"/>
+      {{else}}
+      <img src="images/dialog-error-22-22.png"/>
+      {{/if}}
+    </td>
+    <td>
+      <a href="#" data-bind="click: function(){ editNpmRepository(row) }">
+        <span class="btn btn-primary"><i class="icon-pencil icon-white"/></span>
+      </a>
+    </td>
+    <td>
+      <a href="#" data-bind="click: function(){ removeNpmRepository(row) }">
+        <span class="btn btn-danger"><i class="icon-trash icon-white"/></span>
+      </a>
+    </td>
+  </tr>
+  {{/each}}
+  </tbody>
+</script>
+
+<script id="npm-repository-edit-tmpl" type='text/html'>
+  <form id="npm-repository-edit-form" class="well form-horizontal">
+    <fieldset id="npm-repository-edit-fieldset">
+      <div class="control-group">
+        <label class="control-label" for="npm-id">${$.i18n.prop('identifier')}</label>
+        <div class="controls">
+          {{if update}}
+          <span class="uneditable-input">${$data.npmRepository.id}</span>
+          {{else}}
+          <input type="text" class="input-xlarge required" id="npm-id" name="id" size="50"
+                 data-bind="value: npmRepository.id, css:{'uneditable-input': update}, readonly:update"/>
+          {{/if}}
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-name">${$.i18n.prop('name')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge required" id="npm-name" name="name" size="50"
+                 data-bind="value: npmRepository.name"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-location">${$.i18n.prop('directory')}</label>
+        <div class="controls">
+          <input type="text" class="input-xxlarge required" id="npm-location" name="location" size="50"
+                 data-bind="value: npmRepository.location"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-description">${$.i18n.prop('description')}</label>
+        <div class="controls">
+          <textarea rows="3" id="npm-description" name="description"
+                    data-bind="value: npmRepository.description"></textarea>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-schedulingDefinition">${$.i18n.prop('cronExpression')}</label>
+        <div class="controls">
+          <input type="text" id="npm-schedulingDefinition" name="schedulingDefinition" size="40"
+                 data-bind="value: npmRepository.schedulingDefinition"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-scanned">${$.i18n.prop('scanned')}</label>
+        <div class="controls">
+          <input type="checkbox" id="npm-scanned" name="scanned"
+                 data-bind="checked: npmRepository.scanned"/>
+        </div>
+      </div>
+    </fieldset>
+    <button data-bind="click: save" class="btn" id="npm-repository-save-button">${$.i18n.prop('save')}</button>
+    <button data-bind="click: displayGrid" class="btn">${$.i18n.prop('cancel')}</button>
+  </form>
+</script>
+
+<script id="npm-repository-delete-warning-tmpl" type='text/html'>
+  <div>
+    <span class="label label-warning">${$.i18n.prop('warning.not.undone.operation')}</span>
+    <div><strong>${$.i18n.prop('id')}: ${id()}</strong></div>
+    <div>${$.i18n.prop('name')}: ${name()}</div>
+  </div>
+</script>
+
+<!-- RPM repositories -->
+
+<script id="rpmRepositoriesMain" type="text/html">
+  <div class="page-header">
+    <h2><img src="images/system-file-manager-32-32.png"/>${$.i18n.prop('rpm.repositories.title')}</h2>
+  </div>
+
+  <ul id="rpm-repositories-tabs" class="nav nav-tabs">
+    <li class="active" id="rpm-repositories-view-li">
+      <a data-toggle="tab" href="#rpm-repositories-view" id="rpm-repositories-view-a">${$.i18n.prop('rpm.repositories.grid.tab.title')}</a>
+    </li>
+    <li id="rpm-repository-edit-li">
+      <a data-toggle="tab" href="#rpm-repository-edit">${$.i18n.prop('add')}</a>
+    </li>
+  </ul>
+  <div id="rpm-repositories-tabs-content" class="tab-content">
+    <div id="rpm-repositories-view" class="tab-pane active">
+      <table class="table table-striped table-bordered" id="rpm-repositories-table"
+             data-bind="simpleGrid: gridViewModel,simpleGridTemplate:'ko_rpm-repositoriesGrid',pageLinksId:'rpm-repositoriesPagination',data:'rpmRepositories'">
+      </table>
+      <div id="rpm-repositoriesPagination"></div>
+    </div>
+    <div id="rpm-repository-edit" class="tab-pane" data-bind='template:{name:"rpm-repository-edit-tmpl"}'>
+    </div>
+  </div>
+</script>
+
+<script id='ko_rpm-repositoriesGrid' type='text/html'>
+  <thead>
+  <tr>
+    {{each(i, columnDefinition) columns}}
+    <th title="${ columnDefinition.title }">${ columnDefinition.headerText }</th>
+    {{/each}}
+    <th>${$.i18n.prop('scanned')}</th>
+    <th>${$.i18n.prop('edit')}</th>
+    <th>${$.i18n.prop('delete')}</th>
+  </tr>
+  </thead>
+  <tbody>
+  {{each(i, row) itemsOnCurrentPage()}}
+  <tr>
+    {{each(j, columnDefinition) columns}}
+    <td>
+      ${ typeof columnDefinition.rowText == 'function' ? columnDefinition.rowText(row) : row[columnDefinition.rowText] }
+    </td>
+    {{/each}}
+    <td>
+      {{if row.scanned() == true}}
+      <img src="images/weather-clear-22-22.png" title="${$.i18n.prop('scanned')}"/>
+      {{else}}
+      <img src="images/dialog-error-22-22.png"/>
+      {{/if}}
+    </td>
+    <td>
+      <a href="#" data-bind="click: function(){ editRpmRepository(row) }">
+        <span class="btn btn-primary"><i class="icon-pencil icon-white"/></span>
+      </a>
+    </td>
+    <td>
+      <a href="#" data-bind="click: function(){ removeRpmRepository(row) }">
+        <span class="btn btn-danger"><i class="icon-trash icon-white"/></span>
+      </a>
+    </td>
+  </tr>
+  {{/each}}
+  </tbody>
+</script>
+
+<script id="rpm-repository-edit-tmpl" type='text/html'>
+  <form id="rpm-repository-edit-form" class="well form-horizontal">
+    <fieldset id="rpm-repository-edit-fieldset">
+      <div class="control-group">
+        <label class="control-label" for="rpm-id">${$.i18n.prop('identifier')}</label>
+        <div class="controls">
+          {{if update}}
+          <span class="uneditable-input">${$data.rpmRepository.id}</span>
+          {{else}}
+          <input type="text" class="input-xlarge required" id="rpm-id" name="id" size="50"
+                 data-bind="value: rpmRepository.id, css:{'uneditable-input': update}, readonly:update"/>
+          {{/if}}
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-name">${$.i18n.prop('name')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge required" id="rpm-name" name="name" size="50"
+                 data-bind="value: rpmRepository.name"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-location">${$.i18n.prop('directory')}</label>
+        <div class="controls">
+          <input type="text" class="input-xxlarge required" id="rpm-location" name="location" size="50"
+                 data-bind="value: rpmRepository.location"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-description">${$.i18n.prop('description')}</label>
+        <div class="controls">
+          <textarea rows="3" id="rpm-description" name="description"
+                    data-bind="value: rpmRepository.description"></textarea>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-schedulingDefinition">${$.i18n.prop('cronExpression')}</label>
+        <div class="controls">
+          <input type="text" id="rpm-schedulingDefinition" name="schedulingDefinition" size="40"
+                 data-bind="value: rpmRepository.schedulingDefinition"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-scanned">${$.i18n.prop('scanned')}</label>
+        <div class="controls">
+          <input type="checkbox" id="rpm-scanned" name="scanned"
+                 data-bind="checked: rpmRepository.scanned"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-gpgKeyPath">${$.i18n.prop('rpm.repository.gpgKeyPath')}</label>
+        <div class="controls">
+          <input type="text" class="input-xxlarge" id="rpm-gpgKeyPath" name="gpgKeyPath" size="50"
+                 data-bind="value: rpmRepository.gpgKeyPath"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-gpgUserId">${$.i18n.prop('rpm.repository.gpgUserId')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge" id="rpm-gpgUserId" name="gpgUserId" size="50"
+                 data-bind="value: rpmRepository.gpgUserId"/>
+        </div>
+      </div>
+
+      <!-- ko if: update -->
+      <!-- ko if: gpgKeyInfo() -->
+      <div class="well">
+        <h4>${$.i18n.prop('rpm.repository.gpgkey.info.title')}</h4>
+        <table class="table table-condensed">
+          <tbody>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.fingerprint')}</td><td data-bind="text: gpgKeyInfo().fingerprint"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.userId')}</td><td data-bind="text: gpgKeyInfo().userId"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.algorithm')}</td><td data-bind="text: gpgKeyInfo().algorithm"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.bitStrength')}</td><td data-bind="text: gpgKeyInfo().bitStrength"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.created')}</td><td data-bind="text: gpgKeyInfo().created"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.expires')}</td><td data-bind="text: gpgKeyInfo().expires"></td></tr>
+          </tbody>
+        </table>
+        <a href="#" class="btn btn-warning" data-bind="click: rotateGpgKey">${$.i18n.prop('rpm.repository.gpgkey.rotate')}</a>
+      </div>
+      <!-- /ko -->
+      <!-- /ko -->
+
+    </fieldset>
+    <button data-bind="click: save" class="btn" id="rpm-repository-save-button">${$.i18n.prop('save')}</button>
+    <button data-bind="click: displayGrid" class="btn">${$.i18n.prop('cancel')}</button>
+  </form>
+</script>
+
+<script id="rpm-repository-delete-warning-tmpl" type='text/html'>
+  <div>
+    <span class="label label-warning">${$.i18n.prop('warning.not.undone.operation')}</span>
+    <div><strong>${$.i18n.prop('id')}: ${id()}</strong></div>
+    <div>${$.i18n.prop('name')}: ${name()}</div>
+  </div>
+</script>
