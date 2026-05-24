@@ -58,7 +58,7 @@ public class AuditInterceptor extends AbstractEventManager implements ContainerR
     protected void addAuditInformation( Event<RestContext> evt )
     {
         RedbackRequestInformation redbackRequestInformation = RedbackAuthenticationThreadLocal.get();
-        String user = redbackRequestInformation == null ? "" : redbackRequestInformation.getUser().getUsername();
+        String user = (redbackRequestInformation == null || redbackRequestInformation.getUser() == null) ? "" : redbackRequestInformation.getUser().getUsername();
         String remoteAddr = redbackRequestInformation == null ? "" : redbackRequestInformation.getRemoteAddr();
         EventContextBuilder.withEvent( evt ).withUser( user, remoteAddr ).apply();
     }

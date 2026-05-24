@@ -89,6 +89,6 @@ public interface RemoteRepositoriesService
     @GET
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN })
     @RedbackAuthorization(permissions = ArchivaRoleConstants.OPERATION_MANAGE_CONFIGURATION)
-    ActionStatus checkRemoteConnectivity( @PathParam( "repositoryId" ) String repositoryId )
+    Boolean checkRemoteConnectivity( @PathParam( "repositoryId" ) String repositoryId )
         throws ArchivaRestServiceException;
 }

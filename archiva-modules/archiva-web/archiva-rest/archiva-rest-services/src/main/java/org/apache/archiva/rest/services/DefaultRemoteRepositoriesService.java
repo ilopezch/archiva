@@ -125,13 +125,13 @@ public class DefaultRemoteRepositoriesService
     }
 
     @Override
-    public ActionStatus checkRemoteConnectivity( String repositoryId)
+    public Boolean checkRemoteConnectivity( String repositoryId)
             throws ArchivaRestServiceException {
         try {
             RemoteRepository remoteRepository = remoteRepositoryAdmin.getRemoteRepository(repositoryId);
             if (remoteRepository == null) {
                 log.warn("Remote repository {} does not exist. Connectivity check returns false.", repositoryId);
-                return ActionStatus.FAIL;
+                return Boolean.FALSE;
             }
             NetworkProxy networkProxy = null;
             if (StringUtils.isNotBlank(remoteRepository.getRemoteDownloadNetworkProxyId())) {
@@ -176,22 +176,22 @@ public class DefaultRemoteRepositoriesService
             // MRM-1933, there are certain servers that do not allow browsing
             if (!(StringUtils.isEmpty(remoteRepository.getCheckPath()) ||
                     "/".equals(remoteRepository.getCheckPath()))) {
-                return new ActionStatus( wagon.resourceExists( remoteRepository.getCheckPath( ) ) );
+                return wagon.resourceExists( remoteRepository.getCheckPath( ) );
             } else {
                 // we only check connectivity as remote repo can be empty
                 // MRM-1909: Wagon implementation appends a slash already
                 wagon.getFileList("");
             }
 
-            return ActionStatus.SUCCESS;
+            return Boolean.TRUE;
         } catch (TransferFailedException e) {
             log.info("TransferFailedException :{}", e.getMessage());
-            return ActionStatus.FAIL;
+            return Boolean.FALSE;
         } catch (Exception e) {
             // This service returns either true or false, Exception cannot be handled by the clients
             log.debug("Exception occured on connectivity test.", e);
             log.info("Connection exception: {}", e.getMessage());
-            return ActionStatus.FAIL;
+            return Boolean.FALSE;
         }
 
     }

@@ -108,7 +108,7 @@ public class RemoteRepositoryConnectivityCheckTest
 
             service.addRemoteRepository( repo );
 
-            assertThat( service.checkRemoteConnectivity( repo.getId() ).isSuccess() ).isTrue();
+            assertThat( service.checkRemoteConnectivity( repo.getId() ) ).isTrue();
         }
         finally
         {
@@ -143,7 +143,7 @@ public class RemoteRepositoryConnectivityCheckTest
 
             service.addRemoteRepository( repo );
 
-            assertThat( service.checkRemoteConnectivity( repo.getId() ).isSuccess() ).isTrue();
+            assertThat( service.checkRemoteConnectivity( repo.getId() ) ).isTrue();
         }
         finally
         {
@@ -171,7 +171,7 @@ public class RemoteRepositoryConnectivityCheckTest
 
             service.addRemoteRepository( repo );
 
-            assertThat( service.checkRemoteConnectivity( repo.getId() ).isSuccess() ).isFalse();
+            assertThat( service.checkRemoteConnectivity( repo.getId() ) ).isFalse();
         }
         finally
         {
