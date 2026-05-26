@@ -2018,3 +2018,277 @@
     <div>${$.i18n.prop('name')}: ${name()}</div>
   </div>
 </script>
+
+<!-- NPM remote repositories -->
+
+<script id="npmRemoteRepositoriesMain" type="text/html">
+  <div class="page-header">
+    <h2><img src="images/system-file-manager-32-32.png"/>${$.i18n.prop('npm.remote.repositories.title')}</h2>
+  </div>
+
+  <ul id="npm-remote-repositories-tabs" class="nav nav-tabs">
+    <li class="active" id="npm-remote-repositories-view-li">
+      <a data-toggle="tab" href="#npm-remote-repositories-view" id="npm-remote-repositories-view-a">${$.i18n.prop('npm.remote.repositories.grid.tab.title')}</a>
+    </li>
+    <li id="npm-remote-repository-edit-li">
+      <a data-toggle="tab" href="#npm-remote-repository-edit">${$.i18n.prop('add')}</a>
+    </li>
+  </ul>
+  <div id="npm-remote-repositories-tabs-content" class="tab-content">
+    <div id="npm-remote-repositories-view" class="tab-pane active">
+      <table class="table table-striped table-bordered" id="npm-remote-repositories-table"
+             data-bind="simpleGrid: gridViewModel,simpleGridTemplate:'ko_npm-remoteRepositoriesGrid',pageLinksId:'npm-remoteRepositoriesPagination',data:'npmRemoteRepositories'">
+      </table>
+      <div id="npm-remoteRepositoriesPagination"></div>
+    </div>
+    <div id="npm-remote-repository-edit" class="tab-pane" data-bind='template:{name:"npm-remote-repository-edit-tmpl"}'>
+    </div>
+  </div>
+</script>
+
+<script id='ko_npm-remoteRepositoriesGrid' type='text/html'>
+  <thead>
+  <tr>
+    {{each(i, columnDefinition) columns}}
+    <th title="${ columnDefinition.title }">${ columnDefinition.headerText }</th>
+    {{/each}}
+    <th>${$.i18n.prop('edit')}</th>
+    <th>${$.i18n.prop('delete')}</th>
+  </tr>
+  </thead>
+  <tbody>
+  {{each(i, row) itemsOnCurrentPage()}}
+  <tr>
+    {{each(j, columnDefinition) columns}}
+    <td>
+      ${ typeof columnDefinition.rowText == 'function' ? columnDefinition.rowText(row) : row[columnDefinition.rowText] }
+    </td>
+    {{/each}}
+    <td>
+      <a href="#" data-bind="click: function(){ editNpmRemoteRepository(row) }">
+        <span class="btn btn-primary"><i class="icon-pencil icon-white"/></span>
+      </a>
+    </td>
+    <td>
+      <a href="#" data-bind="click: function(){ removeNpmRemoteRepository(row) }">
+        <span class="btn btn-danger"><i class="icon-trash icon-white"/></span>
+      </a>
+    </td>
+  </tr>
+  {{/each}}
+  </tbody>
+</script>
+
+<script id="npm-remote-repository-edit-tmpl" type='text/html'>
+  <form id="npm-remote-repository-edit-form" class="well form-horizontal">
+    <fieldset id="npm-remote-repository-edit-fieldset">
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-id">${$.i18n.prop('identifier')}</label>
+        <div class="controls">
+          {{if update}}
+          <span class="uneditable-input">${$data.npmRemoteRepository.id}</span>
+          {{else}}
+          <input type="text" class="input-xlarge required" id="npm-remote-id" name="id" size="50"
+                 data-bind="value: npmRemoteRepository.id, css:{'uneditable-input': update}, readonly:update"/>
+          {{/if}}
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-name">${$.i18n.prop('name')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge required" id="npm-remote-name" name="name" size="50"
+                 data-bind="value: npmRemoteRepository.name"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-location">${$.i18n.prop('npm.remote.repository.url')}</label>
+        <div class="controls">
+          <input type="text" class="input-xxlarge required" id="npm-remote-location" name="location" size="50"
+                 data-bind="value: npmRemoteRepository.location"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-description">${$.i18n.prop('description')}</label>
+        <div class="controls">
+          <textarea rows="3" id="npm-remote-description" name="description"
+                    data-bind="value: npmRemoteRepository.description"></textarea>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-loginUser">${$.i18n.prop('npm.remote.repository.loginUser')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge" id="npm-remote-loginUser" name="loginUser" size="50"
+                 data-bind="value: npmRemoteRepository.loginUser"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-loginPassword">${$.i18n.prop('npm.remote.repository.loginPassword')}</label>
+        <div class="controls">
+          <input type="password" class="input-xlarge" id="npm-remote-loginPassword" name="loginPassword" size="50"
+                 data-bind="value: npmRemoteRepository.loginPassword"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-checkPath">${$.i18n.prop('npm.remote.repository.checkPath')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge" id="npm-remote-checkPath" name="checkPath" size="50"
+                 data-bind="value: npmRemoteRepository.checkPath"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="npm-remote-timeoutMs">${$.i18n.prop('npm.remote.repository.timeoutMs')}</label>
+        <div class="controls">
+          <input type="number" class="input-small" id="npm-remote-timeoutMs" name="timeoutMs" min="0"
+                 data-bind="value: npmRemoteRepository.timeoutMs"/>
+        </div>
+      </div>
+    </fieldset>
+    <button data-bind="click: save" class="btn" id="npm-remote-repository-save-button">${$.i18n.prop('save')}</button>
+    <button data-bind="click: displayGrid" class="btn">${$.i18n.prop('cancel')}</button>
+  </form>
+</script>
+
+<script id="npm-remote-repository-delete-warning-tmpl" type='text/html'>
+  <div>
+    <span class="label label-warning">${$.i18n.prop('warning.not.undone.operation')}</span>
+    <div><strong>${$.i18n.prop('id')}: ${id()}</strong></div>
+    <div>${$.i18n.prop('name')}: ${name()}</div>
+  </div>
+</script>
+
+<!-- RPM remote repositories -->
+
+<script id="rpmRemoteRepositoriesMain" type="text/html">
+  <div class="page-header">
+    <h2><img src="images/system-file-manager-32-32.png"/>${$.i18n.prop('rpm.remote.repositories.title')}</h2>
+  </div>
+
+  <ul id="rpm-remote-repositories-tabs" class="nav nav-tabs">
+    <li class="active" id="rpm-remote-repositories-view-li">
+      <a data-toggle="tab" href="#rpm-remote-repositories-view" id="rpm-remote-repositories-view-a">${$.i18n.prop('rpm.remote.repositories.grid.tab.title')}</a>
+    </li>
+    <li id="rpm-remote-repository-edit-li">
+      <a data-toggle="tab" href="#rpm-remote-repository-edit">${$.i18n.prop('add')}</a>
+    </li>
+  </ul>
+  <div id="rpm-remote-repositories-tabs-content" class="tab-content">
+    <div id="rpm-remote-repositories-view" class="tab-pane active">
+      <table class="table table-striped table-bordered" id="rpm-remote-repositories-table"
+             data-bind="simpleGrid: gridViewModel,simpleGridTemplate:'ko_rpm-remoteRepositoriesGrid',pageLinksId:'rpm-remoteRepositoriesPagination',data:'rpmRemoteRepositories'">
+      </table>
+      <div id="rpm-remoteRepositoriesPagination"></div>
+    </div>
+    <div id="rpm-remote-repository-edit" class="tab-pane" data-bind='template:{name:"rpm-remote-repository-edit-tmpl"}'>
+    </div>
+  </div>
+</script>
+
+<script id='ko_rpm-remoteRepositoriesGrid' type='text/html'>
+  <thead>
+  <tr>
+    {{each(i, columnDefinition) columns}}
+    <th title="${ columnDefinition.title }">${ columnDefinition.headerText }</th>
+    {{/each}}
+    <th>${$.i18n.prop('edit')}</th>
+    <th>${$.i18n.prop('delete')}</th>
+  </tr>
+  </thead>
+  <tbody>
+  {{each(i, row) itemsOnCurrentPage()}}
+  <tr>
+    {{each(j, columnDefinition) columns}}
+    <td>
+      ${ typeof columnDefinition.rowText == 'function' ? columnDefinition.rowText(row) : row[columnDefinition.rowText] }
+    </td>
+    {{/each}}
+    <td>
+      <a href="#" data-bind="click: function(){ editRpmRemoteRepository(row) }">
+        <span class="btn btn-primary"><i class="icon-pencil icon-white"/></span>
+      </a>
+    </td>
+    <td>
+      <a href="#" data-bind="click: function(){ removeRpmRemoteRepository(row) }">
+        <span class="btn btn-danger"><i class="icon-trash icon-white"/></span>
+      </a>
+    </td>
+  </tr>
+  {{/each}}
+  </tbody>
+</script>
+
+<script id="rpm-remote-repository-edit-tmpl" type='text/html'>
+  <form id="rpm-remote-repository-edit-form" class="well form-horizontal">
+    <fieldset id="rpm-remote-repository-edit-fieldset">
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-id">${$.i18n.prop('identifier')}</label>
+        <div class="controls">
+          {{if update}}
+          <span class="uneditable-input">${$data.rpmRemoteRepository.id}</span>
+          {{else}}
+          <input type="text" class="input-xlarge required" id="rpm-remote-id" name="id" size="50"
+                 data-bind="value: rpmRemoteRepository.id, css:{'uneditable-input': update}, readonly:update"/>
+          {{/if}}
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-name">${$.i18n.prop('name')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge required" id="rpm-remote-name" name="name" size="50"
+                 data-bind="value: rpmRemoteRepository.name"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-location">${$.i18n.prop('rpm.remote.repository.url')}</label>
+        <div class="controls">
+          <input type="text" class="input-xxlarge required" id="rpm-remote-location" name="location" size="50"
+                 data-bind="value: rpmRemoteRepository.location"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-description">${$.i18n.prop('description')}</label>
+        <div class="controls">
+          <textarea rows="3" id="rpm-remote-description" name="description"
+                    data-bind="value: rpmRemoteRepository.description"></textarea>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-loginUser">${$.i18n.prop('rpm.remote.repository.loginUser')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge" id="rpm-remote-loginUser" name="loginUser" size="50"
+                 data-bind="value: rpmRemoteRepository.loginUser"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-loginPassword">${$.i18n.prop('rpm.remote.repository.loginPassword')}</label>
+        <div class="controls">
+          <input type="password" class="input-xlarge" id="rpm-remote-loginPassword" name="loginPassword" size="50"
+                 data-bind="value: rpmRemoteRepository.loginPassword"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-checkPath">${$.i18n.prop('rpm.remote.repository.checkPath')}</label>
+        <div class="controls">
+          <input type="text" class="input-xlarge" id="rpm-remote-checkPath" name="checkPath" size="50"
+                 data-bind="value: rpmRemoteRepository.checkPath"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="rpm-remote-timeoutMs">${$.i18n.prop('rpm.remote.repository.timeoutMs')}</label>
+        <div class="controls">
+          <input type="number" class="input-small" id="rpm-remote-timeoutMs" name="timeoutMs" min="0"
+                 data-bind="value: rpmRemoteRepository.timeoutMs"/>
+        </div>
+      </div>
+    </fieldset>
+    <button data-bind="click: save" class="btn" id="rpm-remote-repository-save-button">${$.i18n.prop('save')}</button>
+    <button data-bind="click: displayGrid" class="btn">${$.i18n.prop('cancel')}</button>
+  </form>
+</script>
+
+<script id="rpm-remote-repository-delete-warning-tmpl" type='text/html'>
+  <div>
+    <span class="label label-warning">${$.i18n.prop('warning.not.undone.operation')}</span>
+    <div><strong>${$.i18n.prop('id')}: ${id()}</strong></div>
+    <div>${$.i18n.prop('name')}: ${name()}</div>
+  </div>
+</script>

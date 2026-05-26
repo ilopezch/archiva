@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-define("archiva/admin/repository/rpm/main",["jquery","i18n","archiva/admin/repository/rpm/repositories"],
+define("archiva/admin/repository/rpm/main",["jquery","i18n","archiva/admin/repository/rpm/repositories","archiva/admin/repository/rpm/remote-repositories"],
         function() {
             showMenu = function(administrationMenuItems) {
                 administrationMenuItems.push({
@@ -27,6 +27,16 @@ define("archiva/admin/repository/rpm/main",["jquery","i18n","archiva/admin/repos
                     redback: "{permissions: ['archiva-manage-configuration']}",
                     func: function() {
                         displayRpmRepositoriesGrid();
+                    }
+                });
+                administrationMenuItems.push({
+                    text: $.i18n.prop('menu.rpm.remote.repositories'),
+                    order: 516.5,
+                    id: "menu-rpm-remote-repositories-list-a",
+                    href: "#rpmremoterepositorylist",
+                    redback: "{permissions: ['archiva-manage-configuration']}",
+                    func: function() {
+                        displayRpmRemoteRepositoriesGrid();
                     }
                 });
             };
