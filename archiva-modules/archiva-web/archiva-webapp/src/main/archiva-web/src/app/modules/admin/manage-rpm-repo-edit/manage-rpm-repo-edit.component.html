@@ -99,6 +99,46 @@
     </div>
 </div>
 
+<!-- Mirror Sources (Proxy Connectors) -->
+<hr class="mt-4"/>
+<h5>{{'rpm-repo.proxy.head' | translate}}</h5>
+<p class="text-muted small">{{'rpm-repo.proxy.description' | translate}}</p>
+
+<div *ngIf="proxyError" class="alert alert-danger">{{proxyError}}</div>
+
+<table class="table table-sm table-bordered mb-3" *ngIf="proxyConnectors.length > 0">
+    <thead class="thead-light">
+        <tr>
+            <th>{{'rpm-repo.proxy.remote_id' | translate}}</th>
+            <th>{{'headers.action' | translate}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let remoteId of proxyConnectors">
+            <td>{{remoteId}}</td>
+            <td>
+                <a href="#" (click)="removeProxyConnector(remoteId); $event.preventDefault()"
+                   [attr.title]="'rpm-repo.proxy.remove' | translate">
+                    <span class="fas fa-trash"></span>
+                </a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p *ngIf="proxyConnectors.length === 0" class="text-muted small">{{'rpm-repo.proxy.none' | translate}}</p>
+
+<div class="form-inline mt-2" *ngIf="unlinkedRemoteRepos.length > 0">
+    <select class="form-control form-control-sm mr-2" [(ngModel)]="selectedRemoteId">
+        <option value="">{{'rpm-repo.proxy.select_placeholder' | translate}}</option>
+        <option *ngFor="let r of unlinkedRemoteRepos" [value]="r.id">{{r.id}} — {{r.location}}</option>
+    </select>
+    <button class="btn btn-sm btn-outline-primary" type="button"
+            [disabled]="!selectedRemoteId" (click)="addProxyConnector()">
+        {{'rpm-repo.proxy.add' | translate}}
+    </button>
+</div>
+<p *ngIf="availableRemoteRepos.length === 0" class="text-muted small">{{'rpm-repo.proxy.no_remotes' | translate}}</p>
+
 <ng-template #successTmpl let-data="contextData">
     {{'rpm-repo.edit.success' | translate: {id: data?.id} }}
 </ng-template>

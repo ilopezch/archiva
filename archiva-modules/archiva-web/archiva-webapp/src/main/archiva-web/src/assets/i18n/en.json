@@ -372,6 +372,16 @@
       "id": {
         "pattern": "ID may only contain letters, digits, dots, hyphens and underscores."
       }
+    },
+    "proxy": {
+      "head": "Mirror Sources",
+      "description": "Remote repositories this local repository will proxy packages from (mirror functionality).",
+      "remote_id": "Remote Repository",
+      "add": "Add Mirror Source",
+      "remove": "Remove mirror source",
+      "none": "No mirror sources configured. Add a remote repository below to enable proxying.",
+      "select_placeholder": "— select a remote repository —",
+      "no_remotes": "No RPM remote repositories exist. Create one first under RPM Remote Repositories."
     }
   },
   "npm-repo": {
@@ -420,6 +430,16 @@
       "id": {
         "pattern": "ID may only contain letters, digits, dots, hyphens and underscores."
       }
+    },
+    "proxy": {
+      "head": "Mirror Sources",
+      "description": "Remote repositories this local repository will proxy packages from (mirror functionality).",
+      "remote_id": "Remote Repository",
+      "add": "Add Mirror Source",
+      "remove": "Remove mirror source",
+      "none": "No mirror sources configured. Add a remote repository below to enable proxying.",
+      "select_placeholder": "— select a remote repository —",
+      "no_remotes": "No NPM remote repositories exist. Create one first under NPM Remote Repositories."
     }
   },
   "npm-remote-repo": {

@@ -174,4 +174,52 @@ public interface RpmManagedRepositoryService
     )
     RpmGpgKeyInfo rotateGpgKey( @PathParam( "id" ) String repositoryId )
         throws ArchivaRestServiceException;
+
+    @GET
+    @Path( "{id}/proxy-connectors" )
+    @Produces( {APPLICATION_JSON} )
+    @RedbackAuthorization( permissions = {OPERATION_MANAGE_CONFIGURATION} )
+    @Operation( summary = "Returns the remote repository IDs configured as mirror sources for this managed RPM repository.",
+        security = {@SecurityRequirement( name = OPERATION_MANAGE_CONFIGURATION )},
+        responses = {
+            @ApiResponse( responseCode = "200", description = "List of remote repository IDs" ),
+            @ApiResponse( responseCode = "403", description = "Authenticated user does not have permission" ),
+            @ApiResponse( responseCode = "404", description = "Repository not found" )
+        }
+    )
+    List<String> getProxyConnectors( @PathParam( "id" ) String repositoryId )
+        throws ArchivaRestServiceException;
+
+    @POST
+    @Path( "{id}/proxy-connectors/{remoteId}" )
+    @Produces( {APPLICATION_JSON} )
+    @RedbackAuthorization( permissions = {OPERATION_MANAGE_CONFIGURATION} )
+    @Operation( summary = "Adds a remote RPM repository as a mirror source for the managed repository.",
+        security = {@SecurityRequirement( name = OPERATION_MANAGE_CONFIGURATION )},
+        responses = {
+            @ApiResponse( responseCode = "201", description = "Proxy connector created" ),
+            @ApiResponse( responseCode = "403", description = "Authenticated user does not have permission" ),
+            @ApiResponse( responseCode = "404", description = "Managed or remote repository not found" ),
+            @ApiResponse( responseCode = "409", description = "Connector already exists" )
+        }
+    )
+    Response addProxyConnector( @PathParam( "id" ) String repositoryId,
+                                @PathParam( "remoteId" ) String remoteRepositoryId )
+        throws ArchivaRestServiceException;
+
+    @DELETE
+    @Path( "{id}/proxy-connectors/{remoteId}" )
+    @Produces( {APPLICATION_JSON} )
+    @RedbackAuthorization( permissions = {OPERATION_MANAGE_CONFIGURATION} )
+    @Operation( summary = "Removes a remote RPM repository from the mirror sources of the managed repository.",
+        security = {@SecurityRequirement( name = OPERATION_MANAGE_CONFIGURATION )},
+        responses = {
+            @ApiResponse( responseCode = "200", description = "Proxy connector removed" ),
+            @ApiResponse( responseCode = "403", description = "Authenticated user does not have permission" ),
+            @ApiResponse( responseCode = "404", description = "Repository or connector not found" )
+        }
+    )
+    Response deleteProxyConnector( @PathParam( "id" ) String repositoryId,
+                                   @PathParam( "remoteId" ) String remoteRepositoryId )
+        throws ArchivaRestServiceException;
 }

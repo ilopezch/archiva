@@ -20,8 +20,10 @@ import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {switchMap, catchError} from 'rxjs/operators';
+import {forkJoin} from 'rxjs';
 import {RpmRepositoryService} from '@app/services/rpm-repository.service';
 import {RpmGpgKeyInfo, RpmManagedRepository} from '@app/model/rpm-managed-repository';
+import {RpmRemoteRepository} from '@app/model/rpm-remote-repository';
 import {ToastService} from '@app/services/toast.service';
 import {ErrorResult} from '@app/model/error-result';
 
@@ -46,6 +48,11 @@ export class ManageRpmRepoEditComponent implements OnInit {
     gpgKeyRotating = false;
     gpgKeyError: string = null;
 
+    proxyConnectors: string[] = [];
+    availableRemoteRepos: RpmRemoteRepository[] = [];
+    selectedRemoteId = '';
+    proxyError: string = null;
+
     constructor(private route: ActivatedRoute,
                 private fb: FormBuilder,
                 private rpmService: RpmRepositoryService,
@@ -67,11 +74,43 @@ export class ManageRpmRepoEditComponent implements OnInit {
         this.route.params.pipe(
             switchMap(params => {
                 this.repoId = params['id'];
-                return this.rpmService.getRepository(this.repoId);
+                return forkJoin({
+                    repo: this.rpmService.getRepository(this.repoId),
+                    connectors: this.rpmService.getProxyConnectors(this.repoId),
+                    remotes: this.rpmService.queryRemote('', 0, 100, ['id'], 'asc')
+                });
             })
-        ).subscribe((repo: RpmManagedRepository) => {
+        ).subscribe(({repo, connectors, remotes}) => {
             this.repoForm.patchValue(repo);
+            this.proxyConnectors = connectors || [];
+            this.availableRemoteRepos = (remotes?.data || []);
             this.loadGpgKey();
+        });
+    }
+
+    get unlinkedRemoteRepos(): RpmRemoteRepository[] {
+        return this.availableRemoteRepos.filter(r => !this.proxyConnectors.includes(r.id));
+    }
+
+    addProxyConnector(): void {
+        if (!this.selectedRemoteId) return;
+        this.proxyError = null;
+        this.rpmService.addProxyConnector(this.repoId, this.selectedRemoteId).subscribe({
+            next: () => {
+                this.proxyConnectors = [...this.proxyConnectors, this.selectedRemoteId];
+                this.selectedRemoteId = '';
+            },
+            error: (err) => { this.proxyError = err?.message || 'Failed to add mirror source'; }
+        });
+    }
+
+    removeProxyConnector(remoteId: string): void {
+        this.proxyError = null;
+        this.rpmService.deleteProxyConnector(this.repoId, remoteId).subscribe({
+            next: () => {
+                this.proxyConnectors = this.proxyConnectors.filter(id => id !== remoteId);
+            },
+            error: (err) => { this.proxyError = err?.message || 'Failed to remove mirror source'; }
         });
     }
 

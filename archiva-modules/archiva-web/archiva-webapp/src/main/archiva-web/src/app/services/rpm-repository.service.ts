@@ -135,4 +135,29 @@ export class RpmRepositoryService {
             map((response: HttpResponse<boolean>) => response.status === 200)
         );
     }
+
+    getProxyConnectors(id: string): Observable<string[]> {
+        return this.rest.executeRestCall<string[]>('get', 'archiva', `${this.BASE}/${id}/proxy-connectors`, null).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error)))
+        );
+    }
+
+    addProxyConnector(id: string, remoteId: string): Observable<boolean> {
+        return this.rest.executeResponseCall<void>('post', 'archiva',
+            `${this.BASE}/${id}/proxy-connectors/${remoteId}`, null).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error))),
+            map((response: HttpResponse<void>) => response.status === 201)
+        );
+    }
+
+    deleteProxyConnector(id: string, remoteId: string): Observable<boolean> {
+        return this.rest.executeResponseCall<void>('delete', 'archiva',
+            `${this.BASE}/${id}/proxy-connectors/${remoteId}`, null).pipe(
+            catchError((error: HttpErrorResponse) =>
+                throwError(this.rest.getTranslatedErrorResult(error))),
+            map((response: HttpResponse<void>) => response.status === 200)
+        );
+    }
 }

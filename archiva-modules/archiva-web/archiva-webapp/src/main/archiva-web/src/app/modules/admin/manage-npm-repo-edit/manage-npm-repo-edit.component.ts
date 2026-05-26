@@ -21,8 +21,10 @@ import {ActivatedRoute} from '@angular/router';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {switchMap} from 'rxjs/operators';
 import {catchError} from 'rxjs/operators';
+import {forkJoin} from 'rxjs';
 import {NpmRepositoryService} from '@app/services/npm-repository.service';
 import {NpmManagedRepository} from '@app/model/npm-managed-repository';
+import {NpmRemoteRepository} from '@app/model/npm-remote-repository';
 import {ToastService} from '@app/services/toast.service';
 import {ErrorResult} from '@app/model/error-result';
 
@@ -41,6 +43,11 @@ export class ManageNpmRepoEditComponent implements OnInit {
     error = false;
     errorResult: ErrorResult;
     result: NpmManagedRepository;
+
+    proxyConnectors: string[] = [];
+    availableRemoteRepos: NpmRemoteRepository[] = [];
+    selectedRemoteId = '';
+    proxyError: string = null;
 
     constructor(private route: ActivatedRoute,
                 private fb: FormBuilder,
@@ -61,10 +68,42 @@ export class ManageNpmRepoEditComponent implements OnInit {
         this.route.params.pipe(
             switchMap(params => {
                 this.repoId = params['id'];
-                return this.npmService.getRepository(this.repoId);
+                return forkJoin({
+                    repo: this.npmService.getRepository(this.repoId),
+                    connectors: this.npmService.getProxyConnectors(this.repoId),
+                    remotes: this.npmService.queryRemote('', 0, 100, ['id'], 'asc')
+                });
             })
-        ).subscribe((repo: NpmManagedRepository) => {
+        ).subscribe(({repo, connectors, remotes}) => {
             this.repoForm.patchValue(repo);
+            this.proxyConnectors = connectors || [];
+            this.availableRemoteRepos = (remotes?.data || []);
+        });
+    }
+
+    get unlinkedRemoteRepos(): NpmRemoteRepository[] {
+        return this.availableRemoteRepos.filter(r => !this.proxyConnectors.includes(r.id));
+    }
+
+    addProxyConnector(): void {
+        if (!this.selectedRemoteId) return;
+        this.proxyError = null;
+        this.npmService.addProxyConnector(this.repoId, this.selectedRemoteId).subscribe({
+            next: () => {
+                this.proxyConnectors = [...this.proxyConnectors, this.selectedRemoteId];
+                this.selectedRemoteId = '';
+            },
+            error: (err) => { this.proxyError = err?.message || 'Failed to add mirror source'; }
+        });
+    }
+
+    removeProxyConnector(remoteId: string): void {
+        this.proxyError = null;
+        this.npmService.deleteProxyConnector(this.repoId, remoteId).subscribe({
+            next: () => {
+                this.proxyConnectors = this.proxyConnectors.filter(id => id !== remoteId);
+            },
+            error: (err) => { this.proxyError = err?.message || 'Failed to remove mirror source'; }
         });
     }
 

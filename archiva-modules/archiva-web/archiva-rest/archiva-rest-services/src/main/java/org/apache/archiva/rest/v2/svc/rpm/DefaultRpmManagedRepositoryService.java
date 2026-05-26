@@ -18,11 +18,14 @@ package org.apache.archiva.rest.v2.svc.rpm;
  */
 
 import org.apache.archiva.admin.model.RepositoryAdminException;
+import org.apache.archiva.admin.model.beans.ProxyConnector;
 import org.apache.archiva.admin.model.managed.ManagedRepositoryAdmin;
+import org.apache.archiva.admin.model.proxyconnector.ProxyConnectorAdmin;
 import org.apache.archiva.components.rest.model.PagedResult;
 import org.apache.archiva.components.rest.util.QueryHelper;
 import org.apache.archiva.configuration.model.ManagedRepositoryConfiguration;
 import org.apache.archiva.repository.ManagedRepository;
+import org.apache.archiva.repository.RemoteRepository;
 import org.apache.archiva.repository.Repository;
 import org.apache.archiva.repository.RepositoryException;
 import org.apache.archiva.repository.RepositoryRegistry;
@@ -48,8 +51,10 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -81,12 +86,15 @@ public class DefaultRpmManagedRepositoryService extends AbstractService implemen
 
     private final RepositoryRegistry repositoryRegistry;
     private final ManagedRepositoryAdmin managedRepositoryAdmin;
+    private final ProxyConnectorAdmin proxyConnectorAdmin;
 
     public DefaultRpmManagedRepositoryService( RepositoryRegistry repositoryRegistry,
-                                               ManagedRepositoryAdmin managedRepositoryAdmin )
+                                               ManagedRepositoryAdmin managedRepositoryAdmin,
+                                               ProxyConnectorAdmin proxyConnectorAdmin )
     {
         this.repositoryRegistry = repositoryRegistry;
         this.managedRepositoryAdmin = managedRepositoryAdmin;
+        this.proxyConnectorAdmin = proxyConnectorAdmin;
     }
 
     @Override
@@ -266,6 +274,79 @@ public class DefaultRpmManagedRepositoryService extends AbstractService implemen
         catch ( IOException | PGPException e )
         {
             log.error( "Could not rotate GPG key for repository {}: {}", repositoryId, e.getMessage(), e );
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
+        }
+    }
+
+    @Override
+    public List<String> getProxyConnectors( String repositoryId ) throws ArchivaRestServiceException
+    {
+        requireRpmRepository( repositoryId );
+        try
+        {
+            Map<String, List<ProxyConnector>> connectorMap = proxyConnectorAdmin.getProxyConnectorAsMap();
+            List<ProxyConnector> connectors = connectorMap.getOrDefault( repositoryId, Collections.emptyList() );
+            return connectors.stream()
+                .map( ProxyConnector::getTargetRepoId )
+                .collect( Collectors.toList() );
+        }
+        catch ( RepositoryAdminException e )
+        {
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
+        }
+    }
+
+    @Override
+    public Response addProxyConnector( String repositoryId, String remoteRepositoryId )
+        throws ArchivaRestServiceException
+    {
+        requireRpmRepository( repositoryId );
+        RemoteRepository remote = repositoryRegistry.getRemoteRepository( remoteRepositoryId );
+        if ( remote == null || remote.getType() != RepositoryType.RPM )
+        {
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_NOT_FOUND, remoteRepositoryId ), 404 );
+        }
+        try
+        {
+            if ( proxyConnectorAdmin.getProxyConnector( repositoryId, remoteRepositoryId ) != null )
+            {
+                return Response.status( 409 ).build();
+            }
+            ProxyConnector connector = new ProxyConnector();
+            connector.setSourceRepoId( repositoryId );
+            connector.setTargetRepoId( remoteRepositoryId );
+            proxyConnectorAdmin.addProxyConnector( connector, getAuditInformation() );
+            return Response.status( 201 ).build();
+        }
+        catch ( RepositoryAdminException e )
+        {
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
+        }
+    }
+
+    @Override
+    public Response deleteProxyConnector( String repositoryId, String remoteRepositoryId )
+        throws ArchivaRestServiceException
+    {
+        requireRpmRepository( repositoryId );
+        try
+        {
+            ProxyConnector connector = proxyConnectorAdmin.getProxyConnector( repositoryId, remoteRepositoryId );
+            if ( connector == null )
+            {
+                throw new ArchivaRestServiceException(
+                    ErrorMessage.of( ErrorKeys.REPOSITORY_NOT_FOUND,
+                        repositoryId + " -> " + remoteRepositoryId ), 404 );
+            }
+            proxyConnectorAdmin.deleteProxyConnector( connector, getAuditInformation() );
+            return Response.ok().build();
+        }
+        catch ( RepositoryAdminException e )
+        {
             throw new ArchivaRestServiceException(
                 ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
         }
