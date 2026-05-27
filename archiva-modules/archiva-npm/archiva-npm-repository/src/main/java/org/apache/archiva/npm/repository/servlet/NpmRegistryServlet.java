@@ -172,17 +172,21 @@ public class NpmRegistryServlet extends HttpServlet
     @Override
     protected void doGet( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
     {
+        log.info( "NPM GET pathInfo={} queryString={}", req.getPathInfo(), req.getQueryString() );
         String[] parts = splitPath( req );
         if ( parts == null )
         {
+            log.info( "NPM GET 400 — null/short pathInfo" );
             resp.sendError( HttpServletResponse.SC_BAD_REQUEST, "Invalid npm registry URL" );
             return;
         }
         String repoId = parts[0];
+        log.info( "NPM GET repoId={} parts={}", repoId, java.util.Arrays.toString( parts ) );
 
         ManagedRepository repo = repositoryRegistry.getManagedRepository( repoId );
         if ( repo == null )
         {
+            log.info( "NPM GET 404 — repository '{}' not found in registry", repoId );
             resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Repository not found: " + repoId );
             return;
         }
@@ -931,25 +935,37 @@ public class NpmRegistryServlet extends HttpServlet
 
     private StorageAsset resolveWithProxy( ManagedRepository repo, String path )
     {
+        log.info( "NPM resolveWithProxy repo={} path={}", repo.getId(), path );
         StorageAsset local = repo.getAsset( path );
         if ( local.exists() )
         {
+            log.info( "NPM resolveWithProxy — found locally" );
             return local;
         }
 
-        if ( proxyHandler == null || !proxyHandler.hasProxies( repo ) )
+        if ( proxyHandler == null )
         {
+            log.info( "NPM resolveWithProxy — proxyHandler is null (bean not registered); returning 404" );
+            return local;
+        }
+        if ( !proxyHandler.hasProxies( repo ) )
+        {
+            log.info( "NPM resolveWithProxy — no proxy connectors for repo '{}'; returning 404", repo.getId() );
             return local;
         }
 
+        log.info( "NPM resolveWithProxy — triggering proxy fetch for path={}", path );
         try
         {
             StorageAsset fetched = proxyHandler.fetchFromProxies( repo, path );
-            return ( fetched != null && fetched.exists() ) ? fetched : local;
+            boolean exists = fetched != null && fetched.exists();
+            log.info( "NPM resolveWithProxy — proxy fetch result: fetched={} exists={}", fetched, exists );
+            return exists ? fetched : local;
         }
         catch ( Exception e )
         {
-            log.warn( "Proxy fetch failed for path {} in repo {}: {}", path, repo.getId(), e.getMessage() );
+            log.warn( "NPM resolveWithProxy — proxy fetch EXCEPTION for path={} repo={}: {}",
+                      path, repo.getId(), e.getMessage(), e );
             return local;
         }
     }

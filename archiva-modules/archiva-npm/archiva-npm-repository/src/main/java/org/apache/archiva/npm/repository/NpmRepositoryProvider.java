@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
@@ -79,6 +80,14 @@ public class NpmRepositoryProvider implements RepositoryProvider
     private FileLockManager fileLockManager;
 
     private final List<EventHandler<? super RepositoryEvent>> repositoryEventHandlers = new ArrayList<>();
+
+    @PostConstruct
+    public void init()
+    {
+        log.info( "NpmRepositoryProvider initialized — remoteBaseDir={} repoBaseDir={}",
+                  archivaConfiguration.getRemoteRepositoryBaseDir(),
+                  archivaConfiguration.getRepositoryBaseDir() );
+    }
 
     @Override
     public Set<RepositoryType> provides()
@@ -137,19 +146,24 @@ public class NpmRepositoryProvider implements RepositoryProvider
     @Override
     public ManagedRepository createManagedInstance( ManagedRepositoryConfiguration cfg ) throws RepositoryException
     {
+        log.info( "createManagedInstance: id={} location={}", cfg.getId(), cfg.getLocation() );
         Path baseDir = resolveBaseDir( cfg.getLocation() );
+        Path storagePath = baseDir.resolve( cfg.getId() );
+        log.info( "createManagedInstance: storagePath={}", storagePath );
         FilesystemStorage storage;
         try
         {
-            storage = new FilesystemStorage( baseDir.resolve( cfg.getId() ), fileLockManager );
+            storage = new FilesystemStorage( storagePath, fileLockManager );
         }
         catch ( IOException e )
         {
+            log.error( "createManagedInstance: failed to init storage at {} for {}: {}", storagePath, cfg.getId(), e.getMessage(), e );
             throw new RepositoryException( "Cannot initialize storage for " + cfg.getId(), e );
         }
         NpmManagedRepository repo = new NpmManagedRepository( cfg.getId(), cfg.getName(), storage );
         updateManagedInstance( repo, cfg );
         registerEventHandlers( repo );
+        log.info( "createManagedInstance: success id={} location={}", repo.getId(), repo.getLocation() );
         return repo;
     }
 
@@ -193,19 +207,24 @@ public class NpmRepositoryProvider implements RepositoryProvider
     @Override
     public RemoteRepository createRemoteInstance( RemoteRepositoryConfiguration cfg ) throws RepositoryException
     {
+        log.info( "createRemoteInstance: id={} url={}", cfg.getId(), cfg.getUrl() );
         Path baseDir = archivaConfiguration.getRemoteRepositoryBaseDir();
+        Path storagePath = baseDir.resolve( cfg.getId() );
+        log.info( "createRemoteInstance: storagePath={}", storagePath );
         FilesystemStorage storage;
         try
         {
-            storage = new FilesystemStorage( baseDir.resolve( cfg.getId() ), fileLockManager );
+            storage = new FilesystemStorage( storagePath, fileLockManager );
         }
         catch ( IOException e )
         {
+            log.error( "createRemoteInstance: failed to init storage at {} for {}: {}", storagePath, cfg.getId(), e.getMessage(), e );
             throw new RepositoryException( "Cannot initialize storage for remote " + cfg.getId(), e );
         }
         NpmRemoteRepository repo = new NpmRemoteRepository( cfg.getId(), cfg.getName(), storage );
         updateRemoteInstance( repo, cfg );
         registerEventHandlers( repo );
+        log.info( "createRemoteInstance: success id={} location={}", repo.getId(), repo.getLocation() );
         return repo;
     }
 

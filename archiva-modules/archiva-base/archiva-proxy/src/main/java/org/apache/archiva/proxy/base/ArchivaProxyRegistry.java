@@ -163,14 +163,20 @@ public class ArchivaProxyRegistry implements ProxyRegistry, EventHandler<Reposit
         proxyConnector.setProxyId(configuration.getProxyId());
         ManagedRepository srcRepo = repositoryRegistry.getManagedRepository(configuration.getSourceRepoId());
         if (srcRepo==null) {
+            log.warn( "buildProxyConnector: skipping connector {}->{} — managed repo '{}' not found in registry (not yet initialized or failed to load)",
+                      configuration.getSourceRepoId(), configuration.getTargetRepoId(), configuration.getSourceRepoId() );
             return Optional.empty();
         }
         proxyConnector.setSourceRepository(srcRepo);
         RemoteRepository targetRepo = repositoryRegistry.getRemoteRepository(configuration.getTargetRepoId());
         if (targetRepo==null) {
+            log.warn( "buildProxyConnector: skipping connector {}->{} — remote repo '{}' not found in registry (not yet initialized or failed to load)",
+                      configuration.getSourceRepoId(), configuration.getTargetRepoId(), configuration.getTargetRepoId() );
             return Optional.empty();
         }
         proxyConnector.setTargetRepository(targetRepo);
+        log.info( "buildProxyConnector: registered connector {} -> {} (type={})",
+                  srcRepo.getId(), targetRepo.getId(), targetRepo.getType() );
         return Optional.of(proxyConnector);
     }
 

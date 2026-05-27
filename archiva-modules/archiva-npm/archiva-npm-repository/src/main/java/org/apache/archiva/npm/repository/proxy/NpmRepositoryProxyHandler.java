@@ -113,6 +113,8 @@ public class NpmRepositoryProxyHandler extends DefaultRepositoryProxyHandler
             String apiUrl = remotePath.endsWith( "/package.json" )
                 ? url.substring( 0, url.length() - "/package.json".length() )
                 : url;
+            log.info( "NPM proxy transferResources: remotePath={} originalUrl={} apiUrl={}",
+                      remotePath, url, apiUrl );
             HttpGet request = new HttpGet( apiUrl );
             request.setHeader( HttpHeaders.ACCEPT, "application/json, application/octet-stream, */*" );
             request.setHeader( "npm-session", "archiva-proxy" );
@@ -125,21 +127,22 @@ public class NpmRepositoryProxyHandler extends DefaultRepositoryProxyHandler
                     new java.util.Date( lastModified ).toString() );
             }
 
-            log.debug( "NPM proxy GET {}", apiUrl );
+            log.info( "NPM proxy GET {}", apiUrl );
             HttpResponse response = httpClient.execute( request );
             int status = response.getStatusLine().getStatusCode();
+            log.info( "NPM proxy response: status={} url={}", status, apiUrl );
 
             if ( status == HttpStatus.SC_NOT_MODIFIED )
             {
-                throw new NotModifiedException( "Not modified: " + url );
+                throw new NotModifiedException( "Not modified: " + apiUrl );
             }
             if ( status == HttpStatus.SC_NOT_FOUND )
             {
-                throw new NotFoundException( "Not found on upstream registry: " + url );
+                throw new NotFoundException( "Not found on upstream registry: " + apiUrl );
             }
             if ( status < 200 || status >= 300 )
             {
-                throw new ProxyException( "Unexpected HTTP " + status + " fetching " + url );
+                throw new ProxyException( "Unexpected HTTP " + status + " fetching " + apiUrl );
             }
 
             HttpEntity entity = response.getEntity();

@@ -160,25 +160,36 @@ public class ManagedRepositoryHandler
 
     public Map<String, ManagedRepository> newOrUpdateInstancesFromConfig( Map<String, ManagedRepository> currentInstances)
     {
+        List<ManagedRepositoryConfiguration> managedRepoConfigs;
         try
         {
-            List<ManagedRepositoryConfiguration> managedRepoConfigs =
-                new ArrayList<>(
-                    getConfigurationHandler( ).getBaseConfiguration( ).getManagedRepositories( ) );
+            managedRepoConfigs = new ArrayList<>(
+                getConfigurationHandler( ).getBaseConfiguration( ).getManagedRepositories( ) );
+        }
+        catch ( Throwable e )
+        {
+            log.error( "Could not read managed repository configuration: {}", e.getMessage( ), e );
+            return new HashMap<>( );
+        }
 
-            if ( managedRepoConfigs == null )
+        if ( managedRepoConfigs == null )
+        {
+            return Collections.emptyMap( );
+        }
+
+        Map<String, ManagedRepository> result = new HashMap<>( );
+        for ( ManagedRepositoryConfiguration repoConfig : managedRepoConfigs )
+        {
+            String id = repoConfig.getId( );
+            if ( result.containsKey( id ) )
             {
-                return Collections.emptyMap( );
+                log.error( "There are repositories with the same id in the configuration: {}", id );
+                continue;
             }
-
-            Map<String, ManagedRepository> result = new HashMap<>( );
-            for ( ManagedRepositoryConfiguration repoConfig : managedRepoConfigs )
+            // Auto-correct type when layout indicates a non-Maven repo but type defaulted to MAVEN.
+            fixMissingType( repoConfig );
+            try
             {
-                String id = repoConfig.getId( );
-                if (result.containsKey( id )) {
-                    log.error( "There are repositories with the same id in the configuration: {}", id );
-                    continue;
-                }
                 ManagedRepository repo;
                 if ( currentInstances.containsKey( id ) )
                 {
@@ -191,6 +202,7 @@ public class ManagedRepositoryHandler
                     repo = newInstance( repoConfig );
                 }
                 result.put( id, repo );
+                log.info( "Managed repository initialized: id={} type={}", id, repoConfig.getType() );
                 if ( repo.supportsFeature( StagingRepositoryFeature.class ) )
                 {
                     StagingRepositoryFeature stagF = repo.getFeature( StagingRepositoryFeature.class );
@@ -227,13 +239,12 @@ public class ManagedRepositoryHandler
                     }
                 }
             }
-            return result;
+            catch ( Throwable e )
+            {
+                log.error( "Could not initialize managed repository '{}' (type={}): {}", id, repoConfig.getType(), e.getMessage( ), e );
+            }
         }
-        catch ( Throwable e )
-        {
-            log.error( "Could not initialize repositories from config: {}", e.getMessage( ), e );
-            return new HashMap<>( );
-        }
+        return result;
     }
 
 
@@ -544,6 +555,29 @@ public class ManagedRepositoryHandler
             }
         }
         repo.registerEventHandler( RepositoryEvent.ANY, repositoryHandlerManager );
+    }
+
+    /**
+     * Corrects the type field when a repository config has a layout that implies a specific type
+     * but the type field was never set (defaulting to MAVEN). This handles configs created before
+     * the type field was properly serialized by the UI/REST layer.
+     */
+    private void fixMissingType( ManagedRepositoryConfiguration cfg )
+    {
+        if ( "MAVEN".equals( cfg.getType( ) ) )
+        {
+            String layout = cfg.getLayout( );
+            if ( "npm-default".equals( layout ) )
+            {
+                log.warn( "Managed repository '{}' has layout 'npm-default' but type 'MAVEN' — auto-correcting type to NPM", cfg.getId( ) );
+                cfg.setType( "NPM" );
+            }
+            else if ( "rpm-default".equals( layout ) )
+            {
+                log.warn( "Managed repository '{}' has layout 'rpm-default' but type 'MAVEN' — auto-correcting type to RPM", cfg.getId( ) );
+                cfg.setType( "RPM" );
+            }
+        }
     }
 
 }

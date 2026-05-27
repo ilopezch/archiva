@@ -112,25 +112,37 @@ public class RemoteRepositoryHandler extends AbstractRepositoryHandler<RemoteRep
 
     public Map<String, RemoteRepository> newOrUpdateInstancesFromConfig( Map<String, RemoteRepository> currentInstances)
     {
+        List<RemoteRepositoryConfiguration> remoteRepoConfigs;
         try
         {
-            List<RemoteRepositoryConfiguration> remoteRepoConfigs =
-                new ArrayList<>(
-                    getConfigurationHandler( ).getBaseConfiguration( ).getRemoteRepositories( ) );
+            remoteRepoConfigs = new ArrayList<>(
+                getConfigurationHandler( ).getBaseConfiguration( ).getRemoteRepositories( ) );
+        }
+        catch ( Throwable e )
+        {
+            log.error( "Could not read remote repository configuration: {}", e.getMessage( ), e );
+            return new HashMap<>( );
+        }
 
-            if ( remoteRepoConfigs == null )
+        if ( remoteRepoConfigs == null )
+        {
+            return Collections.emptyMap( );
+        }
+
+        Map<String, RemoteRepository> result = new HashMap<>( );
+        for ( RemoteRepositoryConfiguration repoConfig : remoteRepoConfigs )
+        {
+            String id = repoConfig.getId( );
+            if ( result.containsKey( id ) )
             {
-                return Collections.emptyMap( );
+                log.error( "There are repositories with the same id in the configuration: {}", id );
+                continue;
             }
-
-            Map<String, RemoteRepository> result = new HashMap<>( );
-            for ( RemoteRepositoryConfiguration repoConfig : remoteRepoConfigs )
+            // Auto-correct type when layout indicates a non-Maven repo but type defaulted to MAVEN.
+            // This handles existing configs created before the type field was properly saved.
+            fixMissingType( repoConfig );
+            try
             {
-                String id = repoConfig.getId( );
-                if (result.containsKey( id )) {
-                    log.error( "There are repositories with the same id in the configuration: {}", id );
-                    continue;
-                }
                 RemoteRepository repo;
                 if ( currentInstances.containsKey( id ) )
                 {
@@ -143,14 +155,14 @@ public class RemoteRepositoryHandler extends AbstractRepositoryHandler<RemoteRep
                     repo = newInstance( repoConfig );
                 }
                 result.put( id, repo );
+                log.info( "Remote repository initialized: id={} type={}", id, repoConfig.getType() );
             }
-            return result;
+            catch ( Throwable e )
+            {
+                log.error( "Could not initialize remote repository '{}' (type={}): {}", id, repoConfig.getType(), e.getMessage( ), e );
+            }
         }
-        catch ( Throwable e )
-        {
-            log.error( "Could not initialize repositories from config: {}", e.getMessage( ), e );
-            return new HashMap<>( );
-        }
+        return result;
     }
 
 
@@ -447,6 +459,29 @@ public class RemoteRepositoryHandler extends AbstractRepositoryHandler<RemoteRep
     public ArchivaIndexManager getIndexManager( RepositoryType type )
     {
         return indexManagerFactory.getIndexManager( type );
+    }
+
+    /**
+     * Corrects the type field when a repository config has a layout that implies a specific type
+     * but the type field was never set (defaulting to MAVEN). This handles configs created before
+     * the type field was properly serialized by the UI/REST layer.
+     */
+    private void fixMissingType( RemoteRepositoryConfiguration cfg )
+    {
+        if ( "MAVEN".equals( cfg.getType( ) ) )
+        {
+            String layout = cfg.getLayout( );
+            if ( "npm-default".equals( layout ) )
+            {
+                log.warn( "Remote repository '{}' has layout 'npm-default' but type 'MAVEN' — auto-correcting type to NPM", cfg.getId( ) );
+                cfg.setType( "NPM" );
+            }
+            else if ( "rpm-default".equals( layout ) )
+            {
+                log.warn( "Remote repository '{}' has layout 'rpm-default' but type 'MAVEN' — auto-correcting type to RPM", cfg.getId( ) );
+                cfg.setType( "RPM" );
+            }
+        }
     }
 
 }
