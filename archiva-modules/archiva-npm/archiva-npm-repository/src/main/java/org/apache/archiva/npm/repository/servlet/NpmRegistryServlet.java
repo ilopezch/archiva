@@ -1114,7 +1114,10 @@ public class NpmRegistryServlet extends HttpServlet
         {
             return null;
         }
-        String[] parts = pathInfo.substring( 1 ).split( "/" );
+        // npm encodes scoped packages as @scope%2Fname — decode before splitting so the
+        // @scope and name land in separate array slots as NpmRequest.parse expects.
+        String decoded = pathInfo.replace( "%2F", "/" ).replace( "%2f", "/" );
+        String[] parts = decoded.substring( 1 ).split( "/" );
         if ( parts.length < 2 )
         {
             return null;
