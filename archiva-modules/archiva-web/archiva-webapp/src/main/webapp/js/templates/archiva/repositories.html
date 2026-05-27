@@ -2114,24 +2114,20 @@
         </div>
       </div>
 
-      <!-- ko if: update -->
-      <!-- ko if: gpgKeyInfo() -->
-      <div class="well">
+      <div class="well" data-bind="visible: update && gpgKeyInfo()">
         <h4>${$.i18n.prop('rpm.repository.gpgkey.info.title')}</h4>
         <table class="table table-condensed">
           <tbody>
-          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.fingerprint')}</td><td data-bind="text: gpgKeyInfo().fingerprint"></td></tr>
-          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.userId')}</td><td data-bind="text: gpgKeyInfo().userId"></td></tr>
-          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.algorithm')}</td><td data-bind="text: gpgKeyInfo().algorithm"></td></tr>
-          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.bitStrength')}</td><td data-bind="text: gpgKeyInfo().bitStrength"></td></tr>
-          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.created')}</td><td data-bind="text: gpgKeyInfo().created"></td></tr>
-          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.expires')}</td><td data-bind="text: gpgKeyInfo().expires"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.fingerprint')}</td><td data-bind="text: gpgKeyInfo() ? gpgKeyInfo().fingerprint : ''"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.userId')}</td><td data-bind="text: gpgKeyInfo() ? gpgKeyInfo().userId : ''"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.algorithm')}</td><td data-bind="text: gpgKeyInfo() ? gpgKeyInfo().algorithm : ''"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.bitStrength')}</td><td data-bind="text: gpgKeyInfo() ? gpgKeyInfo().bitStrength : ''"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.created')}</td><td data-bind="text: gpgKeyInfo() ? gpgKeyInfo().created : ''"></td></tr>
+          <tr><td>${$.i18n.prop('rpm.repository.gpgkey.expires')}</td><td data-bind="text: gpgKeyInfo() ? gpgKeyInfo().expires : ''"></td></tr>
           </tbody>
         </table>
         <a href="#" class="btn btn-warning" data-bind="click: rotateGpgKey">${$.i18n.prop('rpm.repository.gpgkey.rotate')}</a>
       </div>
-      <!-- /ko -->
-      <!-- /ko -->
 
     </fieldset>
     <button data-bind="click: save" class="btn" id="rpm-repository-save-button">${$.i18n.prop('save')}</button>
@@ -2226,6 +2222,12 @@
         <div class="controls">
           <input type="text" class="input-xlarge required" id="npm-remote-name" name="name" size="50"
                  data-bind="value: npmRemoteRepository.name"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label">${$.i18n.prop('type')}</label>
+        <div class="controls">
+          <span class="uneditable-input">${$.i18n.prop('npm.remote.repository.type')}</span>
         </div>
       </div>
       <div class="control-group">
@@ -2363,6 +2365,12 @@
         <div class="controls">
           <input type="text" class="input-xlarge required" id="rpm-remote-name" name="name" size="50"
                  data-bind="value: rpmRemoteRepository.name"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label">${$.i18n.prop('type')}</label>
+        <div class="controls">
+          <span class="uneditable-input">${$.i18n.prop('rpm.remote.repository.type')}</span>
         </div>
       </div>
       <div class="control-group">

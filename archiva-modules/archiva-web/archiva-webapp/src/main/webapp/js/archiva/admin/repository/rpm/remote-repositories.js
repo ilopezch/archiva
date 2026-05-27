@@ -71,6 +71,7 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       $("#rpm-remote-repository-save-button").button('loading');
 
       var payload={
+        type: "RPM",
         id: self.rpmRemoteRepository.id(),
         name: self.rpmRemoteRepository.name(),
         location: self.rpmRemoteRepository.location(),
@@ -155,8 +156,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
     editRpmRemoteRepository=function(rpmRemoteRepository){
       var mainContent=$("#main-content");
+      var editElement=mainContent.find("#rpm-remote-repository-edit").get(0);
+      ko.cleanNode(editElement);
       var viewModel=new RpmRemoteRepositoryViewModel(rpmRemoteRepository,true,self);
-      ko.applyBindings(viewModel,mainContent.find("#rpm-remote-repository-edit").get(0));
+      ko.applyBindings(viewModel,editElement);
       activateRpmRemoteRepositoryEditTab();
       mainContent.find("#rpm-remote-repository-edit-li a").html($.i18n.prop('edit'));
       activateRpmRemoteRepositoryFormValidation();

@@ -71,6 +71,7 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       $("#npm-remote-repository-save-button").button('loading');
 
       var payload={
+        type: "NPM",
         id: self.npmRemoteRepository.id(),
         name: self.npmRemoteRepository.name(),
         location: self.npmRemoteRepository.location(),
@@ -155,8 +156,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
     editNpmRemoteRepository=function(npmRemoteRepository){
       var mainContent=$("#main-content");
+      var editElement=mainContent.find("#npm-remote-repository-edit").get(0);
+      ko.cleanNode(editElement);
       var viewModel=new NpmRemoteRepositoryViewModel(npmRemoteRepository,true,self);
-      ko.applyBindings(viewModel,mainContent.find("#npm-remote-repository-edit").get(0));
+      ko.applyBindings(viewModel,editElement);
       activateNpmRemoteRepositoryEditTab();
       mainContent.find("#npm-remote-repository-edit-li a").html($.i18n.prop('edit'));
       activateNpmRemoteRepositoryFormValidation();

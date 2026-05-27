@@ -348,8 +348,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
     mainContent.find("#rpm-repositories-pills").on('show',function(e){
       if ($(e.target).attr("href")==="#rpm-repository-edit"){
+        var addEl=mainContent.find("#rpm-repository-edit").get(0);
+        ko.cleanNode(addEl);
         var addViewModel=new RpmManagedRepositoryViewModel(new RpmManagedRepository("","","","",true,"","",""),false,rpmRepositoriesViewModel);
-        ko.applyBindings(addViewModel,mainContent.find("#rpm-repository-edit").get(0));
+        ko.applyBindings(addViewModel,addEl);
         activateRpmRepositoryFormValidation();
       }
       if ($(e.target).attr("href")==="#rpm-repositories-view"){
@@ -359,8 +361,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
     mainContent.find("#rpm-remote-repositories-pills").on('show',function(e){
       if ($(e.target).attr("href")==="#rpm-remote-repository-edit"){
+        var addEl=mainContent.find("#rpm-remote-repository-edit").get(0);
+        ko.cleanNode(addEl);
         var addViewModel=new RpmRemoteRepositoryViewModel(new RpmRemoteRepository("","","","","","","",0),false,rpmRemoteRepositoriesViewModel);
-        ko.applyBindings(addViewModel,mainContent.find("#rpm-remote-repository-edit").get(0));
+        ko.applyBindings(addViewModel,addEl);
         activateRpmRemoteRepositoryFormValidation();
       }
       if ($(e.target).attr("href")==="#rpm-remote-repositories-view"){

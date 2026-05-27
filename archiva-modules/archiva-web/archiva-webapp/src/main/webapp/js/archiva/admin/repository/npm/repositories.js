@@ -322,8 +322,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
     mainContent.find("#npm-repositories-pills").on('show',function(e){
       if ($(e.target).attr("href")==="#npm-repository-edit"){
+        var addEl=mainContent.find("#npm-repository-edit").get(0);
+        ko.cleanNode(addEl);
         var addViewModel=new NpmManagedRepositoryViewModel(new NpmManagedRepository("","","","",true,""),false,npmRepositoriesViewModel);
-        ko.applyBindings(addViewModel,mainContent.find("#npm-repository-edit").get(0));
+        ko.applyBindings(addViewModel,addEl);
         activateNpmRepositoryFormValidation();
       }
       if ($(e.target).attr("href")==="#npm-repositories-view"){
@@ -333,8 +335,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
     mainContent.find("#npm-remote-repositories-pills").on('show',function(e){
       if ($(e.target).attr("href")==="#npm-remote-repository-edit"){
+        var addEl=mainContent.find("#npm-remote-repository-edit").get(0);
+        ko.cleanNode(addEl);
         var addViewModel=new NpmRemoteRepositoryViewModel(new NpmRemoteRepository("","","","","","","",0),false,npmRemoteRepositoriesViewModel);
-        ko.applyBindings(addViewModel,mainContent.find("#npm-remote-repository-edit").get(0));
+        ko.applyBindings(addViewModel,addEl);
         activateNpmRemoteRepositoryFormValidation();
       }
       if ($(e.target).attr("href")==="#npm-remote-repositories-view"){
