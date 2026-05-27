@@ -48,7 +48,7 @@ public class RpmManagedRepository extends Repository
         dto.setId( repo.getId() );
         dto.setName( repo.getName() );
         dto.setDescription( repo.getDescription() );
-        dto.setLocation( repo.getLocation().toASCIIString() );
+        dto.setLocation( repo.getLocation().getPath() );
         dto.setScanned( repo.isScanned() );
         dto.setSchedulingDefinition( repo.getSchedulingDefinition() );
         return dto;

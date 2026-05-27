@@ -192,6 +192,13 @@ public class DefaultNpmManagedRepositoryService extends AbstractService implemen
         }
         catch ( RepositoryAdminException e )
         {
+            log.error( "Could not update NPM repository {}: {}", repositoryId, e.getMessage(), e );
+            throw new ArchivaRestServiceException(
+                ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
+        }
+        catch ( Exception e )
+        {
+            log.error( "Unexpected error updating NPM repository {}: {}", repositoryId, e.getMessage(), e );
             throw new ArchivaRestServiceException(
                 ErrorMessage.of( ErrorKeys.REPOSITORY_ADMIN_ERROR, e.getMessage() ) );
         }
