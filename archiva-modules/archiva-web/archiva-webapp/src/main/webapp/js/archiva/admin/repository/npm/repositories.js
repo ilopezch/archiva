@@ -20,6 +20,7 @@ define("archiva/admin/repository/npm/repositories",["jquery","i18n","jquery.tmpl
 function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
   var NPM_API_BASE = "restServices/v2/archiva/repositories/npm/managed";
+  var NPM_REMOTE_API_BASE = "restServices/v2/archiva/repositories/npm/remote";
 
   NpmManagedRepository=function(id,name,location,description,scanned,schedulingDefinition){
     var self=this;
@@ -55,6 +56,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
     this.npmRepositoriesViewModel=npmRepositoriesViewModel;
     this.update=update;
     var self=this;
+
+    this.displayGrid=function(){
+      activateNpmRepositoriesGridTab();
+    };
 
     this.save=function(){
       var valid=$("#main-content").find("#npm-repository-edit-form").valid();
@@ -118,9 +123,6 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       }
     };
 
-    displayGrid=function(){
-      activateNpmRepositoriesGridTab();
-    };
   }
 
   activateNpmRepositoriesGridTab=function(){
@@ -226,6 +228,117 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       error:function(data){
         var res=$.parseJSON(data.responseText);
         displayRestError(res);
+      }
+    });
+  }
+
+  displayNpmAllRepositoriesGrid=function(){
+    var mainContent=$("#main-content");
+    mainContent.html($("#npmAllRepositoriesMain").tmpl());
+    mainContent.find("#npm-repositories-tabs a:first").tab("show");
+
+    mainContent.find("#npm-managed-repositories-content").append(mediumSpinnerImg());
+    mainContent.find("#npm-remote-repositories-content").append(mediumSpinnerImg());
+
+    var npmRepositoriesViewModel=new NpmManagedRepositoriesViewModel();
+    var npmRemoteRepositoriesViewModel=new NpmRemoteRepositoriesViewModel();
+
+    $.ajax(NPM_API_BASE,{
+      type:"GET",
+      dataType:"json",
+      success:function(data){
+        var repos=$.map(data.data,function(item){ return mapNpmManagedRepository(item); });
+        npmRepositoriesViewModel.npmRepositories(repos);
+        npmRepositoriesViewModel.gridViewModel=new ko.simpleGrid.viewModel({
+          data:npmRepositoriesViewModel.npmRepositories,
+          columns:[
+            {headerText:$.i18n.prop('identifier'),rowText:"id"},
+            {headerText:$.i18n.prop('name'),rowText:"name"},
+            {headerText:$.i18n.prop('directory'),rowText:"location"}
+          ],
+          pageSize:10
+        });
+        ko.applyBindings(npmRepositoriesViewModel,mainContent.find("#npm-repositories-view").get(0));
+        removeMediumSpinnerImg(mainContent.find("#npm-managed-repositories-content"));
+      },
+      error:function(data){
+        var res=$.parseJSON(data.responseText);
+        displayRestError(res);
+      }
+    });
+
+    $.ajax(NPM_REMOTE_API_BASE,{
+      type:"GET",
+      dataType:"json",
+      success:function(data){
+        var repos=$.map(data.data,function(item){ return mapNpmRemoteRepository(item); });
+        npmRemoteRepositoriesViewModel.npmRemoteRepositories(repos);
+        npmRemoteRepositoriesViewModel.gridViewModel=new ko.simpleGrid.viewModel({
+          data:npmRemoteRepositoriesViewModel.npmRemoteRepositories,
+          columns:[
+            {headerText:$.i18n.prop('identifier'),rowText:"id"},
+            {headerText:$.i18n.prop('name'),rowText:"name"},
+            {headerText:$.i18n.prop('npm.remote.repository.url'),rowText:"location"}
+          ],
+          pageSize:10
+        });
+        ko.applyBindings(npmRemoteRepositoriesViewModel,mainContent.find("#npm-remote-repositories-view").get(0));
+        removeMediumSpinnerImg(mainContent.find("#npm-remote-repositories-content"));
+
+        var hasRegistry=$.grep(repos,function(r){
+          return r.location()==="https://registry.npmjs.org/";
+        }).length>0;
+        if (!hasRegistry){
+          var registryPayload={
+            id:"npm-registry",
+            name:"NPM Registry",
+            location:"https://registry.npmjs.org/",
+            description:"Central NPM Registry",
+            loginUser:"",
+            loginPassword:"",
+            checkPath:"",
+            timeoutMs:0
+          };
+          $.ajax(NPM_REMOTE_API_BASE,{
+            type:"POST",
+            contentType:"application/json",
+            data:JSON.stringify(registryPayload),
+            dataType:"json",
+            success:function(created){
+              var repo=mapNpmRemoteRepository(created);
+              repo.modified(false);
+              npmRemoteRepositoriesViewModel.npmRemoteRepositories.push(repo);
+              displaySuccessMessage($.i18n.prop('npm.registry.added'));
+            },
+            error:function(){}
+          });
+        }
+      },
+      error:function(data){
+        var res=$.parseJSON(data.responseText);
+        displayRestError(res);
+      }
+    });
+
+    mainContent.find("#npm-repositories-pills").on('show',function(e){
+      if ($(e.target).attr("href")==="#npm-repository-edit"){
+        var addViewModel=new NpmManagedRepositoryViewModel(new NpmManagedRepository("","","","",true,""),false,npmRepositoriesViewModel);
+        ko.applyBindings(addViewModel,mainContent.find("#npm-repository-edit").get(0));
+        activateNpmRepositoryFormValidation();
+      }
+      if ($(e.target).attr("href")==="#npm-repositories-view"){
+        mainContent.find("#npm-repository-edit-li a").html($.i18n.prop("add"));
+      }
+    });
+
+    mainContent.find("#npm-remote-repositories-pills").on('show',function(e){
+      if ($(e.target).attr("href")==="#npm-remote-repository-edit"){
+        var addViewModel=new NpmRemoteRepositoryViewModel(new NpmRemoteRepository("","","","","","","",0),false,npmRemoteRepositoriesViewModel);
+        ko.applyBindings(addViewModel,mainContent.find("#npm-remote-repository-edit").get(0));
+        activateNpmRemoteRepositoryFormValidation();
+      }
+      if ($(e.target).attr("href")==="#npm-remote-repositories-view"){
+        mainContent.find("#npm-remote-repository-edit-li a").html($.i18n.prop("add"));
       }
     });
   }

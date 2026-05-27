@@ -126,7 +126,7 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       }
     };
 
-    displayGrid=function(){
+    this.displayGrid=function(){
       activateRpmRemoteRepositoriesGridTab();
     };
   }

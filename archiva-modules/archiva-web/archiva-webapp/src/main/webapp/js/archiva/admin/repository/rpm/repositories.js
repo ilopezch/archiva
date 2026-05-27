@@ -20,6 +20,7 @@ define("archiva/admin/repository/rpm/repositories",["jquery","i18n","jquery.tmpl
 function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
   var RPM_API_BASE = "restServices/v2/archiva/repositories/rpm/managed";
+  var RPM_REMOTE_API_BASE = "restServices/v2/archiva/repositories/rpm/remote";
 
   RpmManagedRepository=function(id,name,location,description,scanned,schedulingDefinition,gpgKeyPath,gpgUserId){
     var self=this;
@@ -87,6 +88,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
         }
       });
     }
+
+    this.displayGrid=function(){
+      activateRpmRepositoriesGridTab();
+    };
 
     this.save=function(){
       var valid=$("#main-content").find("#rpm-repository-edit-form").valid();
@@ -173,9 +178,6 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       });
     };
 
-    displayGrid=function(){
-      activateRpmRepositoriesGridTab();
-    };
   }
 
   activateRpmRepositoriesGridTab=function(){
@@ -281,6 +283,88 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       error:function(data){
         var res=$.parseJSON(data.responseText);
         displayRestError(res);
+      }
+    });
+  }
+
+  displayRpmAllRepositoriesGrid=function(){
+    var mainContent=$("#main-content");
+    mainContent.html($("#rpmAllRepositoriesMain").tmpl());
+    mainContent.find("#rpm-repositories-tabs a:first").tab("show");
+
+    mainContent.find("#rpm-managed-repositories-content").append(mediumSpinnerImg());
+    mainContent.find("#rpm-remote-repositories-content").append(mediumSpinnerImg());
+
+    var rpmRepositoriesViewModel=new RpmManagedRepositoriesViewModel();
+    var rpmRemoteRepositoriesViewModel=new RpmRemoteRepositoriesViewModel();
+
+    $.ajax(RPM_API_BASE,{
+      type:"GET",
+      dataType:"json",
+      success:function(data){
+        var repos=$.map(data.data,function(item){ return mapRpmManagedRepository(item); });
+        rpmRepositoriesViewModel.rpmRepositories(repos);
+        rpmRepositoriesViewModel.gridViewModel=new ko.simpleGrid.viewModel({
+          data:rpmRepositoriesViewModel.rpmRepositories,
+          columns:[
+            {headerText:$.i18n.prop('identifier'),rowText:"id"},
+            {headerText:$.i18n.prop('name'),rowText:"name"},
+            {headerText:$.i18n.prop('directory'),rowText:"location"}
+          ],
+          pageSize:10
+        });
+        ko.applyBindings(rpmRepositoriesViewModel,mainContent.find("#rpm-repositories-view").get(0));
+        removeMediumSpinnerImg(mainContent.find("#rpm-managed-repositories-content"));
+      },
+      error:function(data){
+        var res=$.parseJSON(data.responseText);
+        displayRestError(res);
+      }
+    });
+
+    $.ajax(RPM_REMOTE_API_BASE,{
+      type:"GET",
+      dataType:"json",
+      success:function(data){
+        var repos=$.map(data.data,function(item){ return mapRpmRemoteRepository(item); });
+        rpmRemoteRepositoriesViewModel.rpmRemoteRepositories(repos);
+        rpmRemoteRepositoriesViewModel.gridViewModel=new ko.simpleGrid.viewModel({
+          data:rpmRemoteRepositoriesViewModel.rpmRemoteRepositories,
+          columns:[
+            {headerText:$.i18n.prop('identifier'),rowText:"id"},
+            {headerText:$.i18n.prop('name'),rowText:"name"},
+            {headerText:$.i18n.prop('rpm.remote.repository.url'),rowText:"location"}
+          ],
+          pageSize:10
+        });
+        ko.applyBindings(rpmRemoteRepositoriesViewModel,mainContent.find("#rpm-remote-repositories-view").get(0));
+        removeMediumSpinnerImg(mainContent.find("#rpm-remote-repositories-content"));
+      },
+      error:function(data){
+        var res=$.parseJSON(data.responseText);
+        displayRestError(res);
+      }
+    });
+
+    mainContent.find("#rpm-repositories-pills").on('show',function(e){
+      if ($(e.target).attr("href")==="#rpm-repository-edit"){
+        var addViewModel=new RpmManagedRepositoryViewModel(new RpmManagedRepository("","","","",true,"","",""),false,rpmRepositoriesViewModel);
+        ko.applyBindings(addViewModel,mainContent.find("#rpm-repository-edit").get(0));
+        activateRpmRepositoryFormValidation();
+      }
+      if ($(e.target).attr("href")==="#rpm-repositories-view"){
+        mainContent.find("#rpm-repository-edit-li a").html($.i18n.prop("add"));
+      }
+    });
+
+    mainContent.find("#rpm-remote-repositories-pills").on('show',function(e){
+      if ($(e.target).attr("href")==="#rpm-remote-repository-edit"){
+        var addViewModel=new RpmRemoteRepositoryViewModel(new RpmRemoteRepository("","","","","","","",0),false,rpmRemoteRepositoriesViewModel);
+        ko.applyBindings(addViewModel,mainContent.find("#rpm-remote-repository-edit").get(0));
+        activateRpmRemoteRepositoryFormValidation();
+      }
+      if ($(e.target).attr("href")==="#rpm-remote-repositories-view"){
+        mainContent.find("#rpm-remote-repository-edit-li a").html($.i18n.prop("add"));
       }
     });
   }

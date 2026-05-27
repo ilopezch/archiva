@@ -86,6 +86,28 @@ archiva-jetty/          # Standalone Jetty distribution
 
 **Spring DI**: All wiring is done via Spring. Configuration is in `applicationContext.xml` files per module; tests use `spring-test` with `@ContextConfiguration`.
 
+## Web UI — Two Separate Frontends
+
+This project ships **two completely separate Web UIs**. Always clarify which one is in scope before doing any frontend work.
+
+### Old UI (PRIMARY — what is actually shipped)
+- **Technology**: Knockout.js + jQuery + RequireJS + jQuery.tmpl
+- **Location**: `archiva-modules/archiva-web/archiva-webapp/src/main/webapp/`
+- **URL**: `http://localhost:8080/archiva/#hashroutes`
+- **JS modules**: `src/main/webapp/js/archiva/admin/repository/{npm,rpm,maven2}/`
+- **HTML templates**: `src/main/webapp/js/templates/archiva/repositories.html` (jQuery.tmpl `${...}` syntax)
+- **i18n**: `archiva-modules/archiva-web/archiva-web-common/src/main/resources/org/apache/archiva/i18n/default.properties`
+- **Plugin loading**: `DefaultPluginsServices` auto-discovers `main.js` files under `archiva/admin/repository/*/` and `archiva/admin/features/*/`
+- **Routing**: Sammy.js hash routing; `#:folder` generic route calls `func()` on the matching menu item
+
+### New UI (IN PROGRESS — not shipped, not integrated into Maven build)
+- **Technology**: Angular 11
+- **Location**: `archiva-modules/archiva-web/archiva-webapp/src/main/archiva-web/`
+- **Dev server**: `npm install && ng serve` → `http://localhost:4200`
+- **Backend expected at**: `http://localhost:8080` (hardcoded in `environment.ts`) — no CORS proxy configured
+- **Status**: Functionally incomplete for production use; not built by Maven; dist output not packaged into the WAR
+- **Do NOT implement UI features here** unless explicitly asked — the old UI is what users see
+
 ### Key Technologies
 
 - **Spring 5.3** — DI, transactions, web MVC

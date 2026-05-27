@@ -26,17 +26,7 @@ define("archiva/admin/repository/npm/main",["jquery","i18n","archiva/admin/repos
                     href: "#npmrepositorylist",
                     redback: "{permissions: ['archiva-manage-configuration']}",
                     func: function() {
-                        displayNpmRepositoriesGrid();
-                    }
-                });
-                administrationMenuItems.push({
-                    text: $.i18n.prop('menu.npm.remote.repositories'),
-                    order: 515.5,
-                    id: "menu-npm-remote-repositories-list-a",
-                    href: "#npmremoterepositorylist",
-                    redback: "{permissions: ['archiva-manage-configuration']}",
-                    func: function() {
-                        displayNpmRemoteRepositoriesGrid();
+                        displayNpmAllRepositoriesGrid();
                     }
                 });
             };
