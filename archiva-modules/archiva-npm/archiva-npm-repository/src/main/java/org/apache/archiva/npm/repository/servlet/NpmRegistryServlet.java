@@ -51,6 +51,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,8 +65,11 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Servlet implementing the npm registry protocol over HTTP.
@@ -73,14 +77,17 @@ import java.util.Map;
  * <p>URL pattern: {@code /npm/{repoId}/{...npmPath}}
  *
  * <ul>
- *   <li>GET  {@code /npm/{repoId}/{name}}                         — full package metadata JSON</li>
- *   <li>GET  {@code /npm/{repoId}/{name}/{version}}               — single-version metadata JSON</li>
- *   <li>GET  {@code /npm/{repoId}/{name}/-/{file}}                — download tarball</li>
- *   <li>GET  {@code /npm/{repoId}/-/package/{name}/dist-tags}     — list dist-tags</li>
- *   <li>GET  {@code /npm/{repoId}/-/v1/search?text=...}           — search packages</li>
- *   <li>PUT  {@code /npm/{repoId}/{name}}                         — publish package</li>
- *   <li>PUT  {@code /npm/{repoId}/-/package/{name}/dist-tags/{t}} — set dist-tag</li>
- *   <li>DELETE {@code /npm/{repoId}/{name}}                       — unpublish package</li>
+ *   <li>GET  {@code /npm/{repoId}/{name}}                              — full package metadata JSON</li>
+ *   <li>GET  {@code /npm/{repoId}/{name}/{version}}                    — single-version metadata JSON</li>
+ *   <li>GET  {@code /npm/{repoId}/{name}/-/{file}}                     — download tarball</li>
+ *   <li>GET  {@code /npm/{repoId}/-/package/{name}/dist-tags}          — list dist-tags</li>
+ *   <li>GET  {@code /npm/{repoId}/-/v1/search?text=...}                — search packages</li>
+ *   <li>GET  {@code /npm/{repoId}/-/v1/done?session=UUID}              — web login polling</li>
+ *   <li>POST {@code /npm/{repoId}/-/v1/login}                          — initiate web login</li>
+ *   <li>POST {@code /npm/{repoId}/-/v1/session/{uuid}/confirm}         — browser confirms login</li>
+ *   <li>PUT  {@code /npm/{repoId}/{name}}                              — publish package</li>
+ *   <li>PUT  {@code /npm/{repoId}/-/package/{name}/dist-tags/{t}}      — set dist-tag</li>
+ *   <li>DELETE {@code /npm/{repoId}/{name}}                            — unpublish package</li>
  * </ul>
  *
  * <p>Scoped packages use an additional {@code @scope} segment before the name.
@@ -100,6 +107,32 @@ public class NpmRegistryServlet extends HttpServlet
     private RepositorySearch repositorySearch;
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    // ---- Web login session store ----------------------------------------
+
+    private static final long SESSION_TTL_MS = 10L * 60 * 1000; // 10 minutes
+
+    private static final ConcurrentHashMap<String, NpmPendingLogin> pendingSessions =
+        new ConcurrentHashMap<>();
+
+    private static final class NpmPendingLogin
+    {
+        final String uuid;
+        final String repoId;
+        final long createdAt = System.currentTimeMillis();
+        volatile String token; // null until browser confirms
+
+        NpmPendingLogin( String uuid, String repoId )
+        {
+            this.uuid = uuid;
+            this.repoId = repoId;
+        }
+
+        boolean isExpired()
+        {
+            return System.currentTimeMillis() - createdAt > SESSION_TTL_MS;
+        }
+    }
 
     @Override
     public void init( ServletConfig config ) throws ServletException
@@ -151,6 +184,13 @@ public class NpmRegistryServlet extends HttpServlet
         if ( repo == null )
         {
             resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Repository not found: " + repoId );
+            return;
+        }
+
+        // /{repoId}/-/v1/done?session=UUID — web login polling (no auth; UUID is the shared secret)
+        if ( parts.length >= 4 && "-".equals( parts[1] ) && "v1".equals( parts[2] ) && "done".equals( parts[3] ) )
+        {
+            handleWebLoginDone( req, resp );
             return;
         }
 
@@ -234,6 +274,42 @@ public class NpmRegistryServlet extends HttpServlet
         }
 
         publishPackage( repo, npmReq, req, resp );
+    }
+
+    @Override
+    protected void doPost( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
+    {
+        String[] parts = splitPath( req );
+        if ( parts == null )
+        {
+            resp.sendError( HttpServletResponse.SC_BAD_REQUEST, "Invalid npm registry URL" );
+            return;
+        }
+        String repoId = parts[0];
+
+        if ( repositoryRegistry.getManagedRepository( repoId ) == null )
+        {
+            resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Repository not found: " + repoId );
+            return;
+        }
+
+        // POST /{repoId}/-/v1/login — npm web login initiation
+        if ( parts.length >= 4 && "-".equals( parts[1] ) && "v1".equals( parts[2] )
+            && "login".equals( parts[3] ) )
+        {
+            handleWebLoginInit( repoId, req, resp );
+            return;
+        }
+
+        // POST /{repoId}/-/v1/session/{uuid}/confirm — browser confirms credentials
+        if ( parts.length >= 6 && "-".equals( parts[1] ) && "v1".equals( parts[2] )
+            && "session".equals( parts[3] ) && "confirm".equals( parts[5] ) )
+        {
+            handleWebLoginConfirm( repoId, parts[4], req, resp );
+            return;
+        }
+
+        resp.sendError( HttpServletResponse.SC_METHOD_NOT_ALLOWED );
     }
 
     @Override
@@ -442,6 +518,131 @@ public class NpmRegistryServlet extends HttpServlet
         resp.setContentType( "application/json" );
         resp.setStatus( HttpServletResponse.SC_OK );
         mapper.writeValue( resp.getOutputStream(), response );
+    }
+
+    // ---- Web login handlers ---------------------------------------------
+
+    /**
+     * Initiates the npm web login flow. Creates a pending session and returns
+     * {@code loginUrl} (for the browser) and {@code doneUrl} (for npm to poll).
+     */
+    private void handleWebLoginInit( String repoId, HttpServletRequest req, HttpServletResponse resp )
+        throws IOException
+    {
+        pendingSessions.values().removeIf( NpmPendingLogin::isExpired );
+
+        String uuid = UUID.randomUUID().toString();
+        pendingSessions.put( uuid, new NpmPendingLogin( uuid, repoId ) );
+
+        String base = getBaseUrl( req );
+        String loginUrl = base + "/#npm-login/" + uuid + "/" + repoId;
+        String doneUrl  = base + "/npm/" + repoId + "/-/v1/done?session=" + uuid;
+
+        ObjectNode body = mapper.createObjectNode();
+        body.put( "loginUrl", loginUrl );
+        body.put( "doneUrl", doneUrl );
+
+        resp.setContentType( "application/json" );
+        resp.setStatus( HttpServletResponse.SC_OK );
+        mapper.writeValue( resp.getWriter(), body );
+    }
+
+    /**
+     * npm polls this endpoint until the browser has confirmed the login.
+     * Returns 202 while pending; 200 with {@code {"token":"..."}} once confirmed.
+     */
+    private void handleWebLoginDone( HttpServletRequest req, HttpServletResponse resp )
+        throws IOException
+    {
+        String uuid = req.getParameter( "session" );
+        if ( uuid == null || uuid.isEmpty() )
+        {
+            resp.sendError( HttpServletResponse.SC_BAD_REQUEST, "Missing session parameter" );
+            return;
+        }
+
+        NpmPendingLogin session = pendingSessions.get( uuid );
+        if ( session == null || session.isExpired() )
+        {
+            pendingSessions.remove( uuid );
+            resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Session not found or expired" );
+            return;
+        }
+
+        if ( session.token == null )
+        {
+            resp.setContentType( "application/json" );
+            resp.setStatus( HttpServletResponse.SC_ACCEPTED ); // 202 — still waiting
+            resp.getWriter().write( "{\"message\":\"Waiting for browser login\"}" );
+            return;
+        }
+
+        pendingSessions.remove( uuid );
+        ObjectNode body = mapper.createObjectNode();
+        body.put( "token", session.token );
+        resp.setContentType( "application/json" );
+        resp.setStatus( HttpServletResponse.SC_OK );
+        mapper.writeValue( resp.getWriter(), body );
+    }
+
+    /**
+     * Called by the browser after the user logs in. Verifies the supplied Basic-auth
+     * credentials and marks the pending session so the npm poller receives a token.
+     */
+    private void handleWebLoginConfirm( String repoId, String uuid,
+                                        HttpServletRequest req, HttpServletResponse resp )
+        throws IOException
+    {
+        NpmPendingLogin session = pendingSessions.get( uuid );
+        if ( session == null || session.isExpired() || !repoId.equals( session.repoId ) )
+        {
+            pendingSessions.remove( uuid );
+            resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Session not found or expired" );
+            return;
+        }
+
+        if ( !checkWriteAccess( req, resp, repoId ) )
+        {
+            return;
+        }
+
+        String authHeader = req.getHeader( "Authorization" );
+        if ( authHeader == null || !authHeader.startsWith( "Basic " ) )
+        {
+            resp.sendError( HttpServletResponse.SC_UNAUTHORIZED, "Basic credentials required" );
+            return;
+        }
+
+        session.token = authHeader.substring( 6 ).trim();
+
+        resp.setContentType( "application/json" );
+        resp.setStatus( HttpServletResponse.SC_OK );
+        resp.getWriter().write( "{\"ok\":true}" );
+    }
+
+    /** Derives the webapp base URL from the request or the {@code archiva.npm.external-url} property. */
+    private String getBaseUrl( HttpServletRequest req )
+    {
+        String external = System.getProperty( "archiva.npm.external-url", "" ).trim();
+        if ( !external.isEmpty() )
+        {
+            return external.replaceAll( "/+$", "" );
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append( req.getScheme() ).append( "://" ).append( req.getServerName() );
+        int port = req.getServerPort();
+        boolean defaultPort = ( "http".equals( req.getScheme() ) && port == 80 )
+            || ( "https".equals( req.getScheme() ) && port == 443 );
+        if ( !defaultPort )
+        {
+            sb.append( ':' ).append( port );
+        }
+        String ctx = req.getContextPath();
+        if ( ctx != null && !ctx.isEmpty() )
+        {
+            sb.append( ctx );
+        }
+        return sb.toString();
     }
 
     // ---- PUT handlers ---------------------------------------------------
@@ -797,6 +998,31 @@ public class NpmRegistryServlet extends HttpServlet
         if ( servletAuth == null || httpAuth == null )
         {
             return true; // security not configured — allow
+        }
+
+        // Translate Bearer token (issued by web login) to Basic so Redback can verify it
+        String authHeader = req.getHeader( "Authorization" );
+        if ( authHeader != null && authHeader.startsWith( "Bearer " ) )
+        {
+            final String basicValue = "Basic " + authHeader.substring( 7 ).trim();
+            req = new HttpServletRequestWrapper( req )
+            {
+                @Override
+                public String getHeader( String name )
+                {
+                    return "Authorization".equalsIgnoreCase( name ) ? basicValue : super.getHeader( name );
+                }
+
+                @Override
+                public Enumeration<String> getHeaders( String name )
+                {
+                    if ( "Authorization".equalsIgnoreCase( name ) )
+                    {
+                        return Collections.enumeration( Collections.singletonList( basicValue ) );
+                    }
+                    return super.getHeaders( name );
+                }
+            };
         }
 
         try

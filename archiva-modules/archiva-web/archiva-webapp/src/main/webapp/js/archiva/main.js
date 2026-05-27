@@ -775,6 +775,66 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
 
         });
 
+        this.get('#npm-login/:session/:repo', function () {
+          var session = this.params.session;
+          var repo    = this.params.repo;
+          $('#main-content').html(
+            '<div style="max-width:420px;margin:60px auto;padding:24px;border:1px solid #ddd;' +
+            'border-radius:4px;background:#fff">' +
+            '<h3 style="margin-top:0">npm CLI Login</h3>' +
+            '<p>The npm CLI is requesting access to repository <strong>' + repo + '</strong>.</p>' +
+            '<div id="npm-login-form">' +
+            '<div class="control-group"><label>Username</label>' +
+            '<input type="text" id="npm-login-user" class="span12" autocomplete="username"/></div>' +
+            '<div class="control-group" style="margin-top:8px"><label>Password</label>' +
+            '<input type="password" id="npm-login-pass" class="span12" autocomplete="current-password"/></div>' +
+            '<div id="npm-login-err" class="alert alert-error" style="display:none;margin-top:8px"></div>' +
+            '<button class="btn btn-primary" id="npm-login-btn" style="margin-top:12px">' +
+            'Login &amp; Authorize</button>' +
+            '</div>' +
+            '<div id="npm-login-ok" style="display:none">' +
+            '<div class="alert alert-success">&#10003; Authorized. You can return to your terminal.</div>' +
+            '</div></div>'
+          );
+          function confirmSession(username, password) {
+            $.ajax({
+              url:  'npm/' + repo + '/-/v1/session/' + session + '/confirm',
+              type: 'POST',
+              headers: { Authorization: 'Basic ' + btoa(username + ':' + password) }
+            }).done(function () {
+              $('#npm-login-form').hide();
+              $('#npm-login-ok').show();
+            }).fail(function () {
+              $('#npm-login-err').text('Authentication failed. Please check your credentials.').show();
+              $('#npm-login-btn').prop('disabled', false);
+            });
+          }
+          $('#main-content').on('click', '#npm-login-btn', function () {
+            var u = $('#npm-login-user').val().trim();
+            var p = $('#npm-login-pass').val();
+            if (!u || !p) {
+              $('#npm-login-err').text('Please enter your username and password.').show();
+              return;
+            }
+            $('#npm-login-btn').prop('disabled', true);
+            $('#npm-login-err').hide();
+            loginCall(u, p, false,
+              function (user) {
+                if (user) {
+                  confirmSession(u, p);
+                } else {
+                  $('#npm-login-err').text('Invalid credentials.').show();
+                  $('#npm-login-btn').prop('disabled', false);
+                }
+              },
+              function () {
+                $('#npm-login-err').text('Login failed. Please check your credentials.').show();
+                $('#npm-login-btn').prop('disabled', false);
+              }
+            );
+          });
+        });
+
       });
   };
 
