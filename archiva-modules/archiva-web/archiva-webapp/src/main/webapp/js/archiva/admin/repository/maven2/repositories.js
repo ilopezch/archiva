@@ -1194,7 +1194,10 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
           });
 
           loadRemoteRepositories(function(data) {
-            remoteRepositoriesViewModel.remoteRepositories(mapRemoteRepositories(data));
+            var mavenRemoteRepos = $.grep(data, function(repo) {
+              return !repo.type || repo.type === "MAVEN";
+            });
+            remoteRepositoriesViewModel.remoteRepositories(mapRemoteRepositories(mavenRemoteRepos));
             remoteRepositoriesViewModel.gridViewModel = new ko.simpleGrid.viewModel({
               data: remoteRepositoriesViewModel.remoteRepositories,
               columns: [

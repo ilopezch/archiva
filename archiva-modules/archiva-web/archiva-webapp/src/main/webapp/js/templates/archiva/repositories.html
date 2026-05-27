@@ -1871,6 +1871,12 @@
         </div>
       </div>
       <div class="control-group">
+        <label class="control-label">${$.i18n.prop('type')}</label>
+        <div class="controls">
+          <span class="uneditable-input">${$.i18n.prop('npm.repository.type')}</span>
+        </div>
+      </div>
+      <div class="control-group">
         <label class="control-label" for="npm-location">${$.i18n.prop('directory')}</label>
         <div class="controls">
           <input type="text" class="input-xxlarge required" id="npm-location" name="location" size="50"
@@ -2057,6 +2063,12 @@
         <div class="controls">
           <input type="text" class="input-xlarge required" id="rpm-name" name="name" size="50"
                  data-bind="value: rpmRepository.name"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label">${$.i18n.prop('type')}</label>
+        <div class="controls">
+          <span class="uneditable-input">${$.i18n.prop('rpm.repository.type')}</span>
         </div>
       </div>
       <div class="control-group">
