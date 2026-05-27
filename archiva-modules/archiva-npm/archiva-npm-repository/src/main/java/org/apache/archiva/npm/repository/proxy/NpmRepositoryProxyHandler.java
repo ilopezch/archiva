@@ -107,7 +107,13 @@ public class NpmRepositoryProxyHandler extends DefaultRepositoryProxyHandler
         CloseableHttpClient httpClient = buildHttpClient( connector, remoteRepository );
         try
         {
-            HttpGet request = new HttpGet( url );
+            // The base class builds the URL as remoteRepo.location + storagePath, e.g.
+            // https://registry.npmjs.org/@scope/name/package.json — but the npm registry
+            // API endpoint is just /@scope/name (no /package.json suffix).
+            String apiUrl = remotePath.endsWith( "/package.json" )
+                ? url.substring( 0, url.length() - "/package.json".length() )
+                : url;
+            HttpGet request = new HttpGet( apiUrl );
             request.setHeader( HttpHeaders.ACCEPT, "application/json, application/octet-stream, */*" );
             request.setHeader( "npm-session", "archiva-proxy" );
 
@@ -119,7 +125,7 @@ public class NpmRepositoryProxyHandler extends DefaultRepositoryProxyHandler
                     new java.util.Date( lastModified ).toString() );
             }
 
-            log.debug( "NPM proxy GET {}", url );
+            log.debug( "NPM proxy GET {}", apiUrl );
             HttpResponse response = httpClient.execute( request );
             int status = response.getStatusLine().getStatusCode();
 
