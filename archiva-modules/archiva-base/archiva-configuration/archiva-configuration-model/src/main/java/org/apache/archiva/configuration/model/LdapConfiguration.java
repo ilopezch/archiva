@@ -80,6 +80,11 @@ public class LdapConfiguration
     private String authenticationMethod;
 
     /**
+     * LDAP user search filter.
+     */
+    private String userFilter;
+
+    /**
      * The LDAP authenticator enabled.
      */
     private boolean bindAuthenticatorEnabled = false;
@@ -252,13 +257,33 @@ public class LdapConfiguration
 
     /**
      * Set the LDAP authenticationMethod.
-     * 
+     *
      * @param authenticationMethod
      */
     public void setAuthenticationMethod( String authenticationMethod )
     {
         this.authenticationMethod = authenticationMethod;
     } //-- void setAuthenticationMethod( String )
+
+    /**
+     * Get LDAP user search filter.
+     *
+     * @return String
+     */
+    public String getUserFilter()
+    {
+        return this.userFilter;
+    } //-- String getUserFilter()
+
+    /**
+     * Set LDAP user search filter.
+     *
+     * @param userFilter
+     */
+    public void setUserFilter( String userFilter )
+    {
+        this.userFilter = userFilter;
+    } //-- void setUserFilter( String )
 
     /**
      * Set the LDAP base dn.
