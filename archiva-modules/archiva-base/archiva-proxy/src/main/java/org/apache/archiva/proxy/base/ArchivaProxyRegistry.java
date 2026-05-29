@@ -85,6 +85,7 @@ public class ArchivaProxyRegistry implements ProxyRegistry, EventHandler<Reposit
         updateConnectors();
         updateNetworkProxies();
         repositoryRegistry.registerEventHandler(RepositoryRegistryEvent.RELOADED, this);
+        repositoryRegistry.registerEventHandler(RepositoryRegistryEvent.INITIALIZED, this);
     }
 
     private ArchivaConfiguration getArchivaConfiguration() {
@@ -225,7 +226,8 @@ public class ArchivaProxyRegistry implements ProxyRegistry, EventHandler<Reposit
     @Override
     public void handle(RepositoryRegistryEvent event) {
         log.debug("Reload happened, updating proxy list");
-        if (event.getType()== RepositoryRegistryEvent.RELOADED) {
+        if (event.getType() == RepositoryRegistryEvent.RELOADED
+                || event.getType() == RepositoryRegistryEvent.INITIALIZED) {
             init();
         }
     }

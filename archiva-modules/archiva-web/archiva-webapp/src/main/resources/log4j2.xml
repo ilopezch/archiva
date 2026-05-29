@@ -125,9 +125,9 @@
 
     -->
 
-    <logger name="com.fasterxml" level="trace"/>
+    <logger name="com.fasterxml" level="info"/>
 
-    <root level="debug" includeLocation="true">
+    <root level="info" includeLocation="true">
       <appender-ref ref="rolling"/>
     </root>
   </loggers>
