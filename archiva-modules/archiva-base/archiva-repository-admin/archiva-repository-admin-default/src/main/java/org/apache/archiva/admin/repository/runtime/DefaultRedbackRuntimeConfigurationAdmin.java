@@ -706,6 +706,11 @@ public class DefaultRedbackRuntimeConfigurationAdmin
         if (LDAP_MAPPER.isStringMapping( key )) {
             return LDAP_MAPPER.getString( key,  getRedbackRuntimeConfiguration().getLdapConfiguration());
         }
+        Map<String, String> extraProperties = getRedbackRuntimeConfiguration().getLdapConfiguration().getExtraProperties();
+        if ( extraProperties.containsKey( key ) )
+        {
+            return extraProperties.get( key );
+        }
         return userConfiguration.getConcatenatedList( key, defaultValue );
     }
 
