@@ -86,7 +86,7 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid) {
           type: "POST",
           dataType: 'json',
           contentType: 'application/json',
-          data: ko.toJSON(self),
+          data: JSON.stringify({name: self.name(), users: ko.toJS(self.users), removedUsers: ko.toJS(self.removedUsers)}),
           success: function(data) {
             clearUserMessages();
             displaySuccessMessage($.i18n.prop("role.users.updated",self.name()));
