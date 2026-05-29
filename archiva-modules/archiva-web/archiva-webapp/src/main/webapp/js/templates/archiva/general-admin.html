@@ -883,6 +883,18 @@
     </tbody>
 </script>
 
+<script type="text/html" id="redback-runtime-ldap-extra-properties-entries-tmpl">
+  <tr>
+    <td>
+      <span class="btn btn-danger" data-bind="click: function(){ removeLdapExtraProperty($data) }">
+        <i class="icon-minus-sign icon-white" title="remove property"></i>
+      </span>
+    </td>
+    <td data-bind="text: key"></td>
+    <td data-bind="text: value"></td>
+  </tr>
+</script>
+
 <script type="text/html" id="redback-runtime-configuration-main">
   <div class="page-header">
     <h2>${$.i18n.prop('redback-runtime-configuration.title')}</h2>
@@ -1088,16 +1100,7 @@
                       </td>
                     </tr>
                   </tbody>
-                  <tbody data-bind="foreach: redbackRuntimeConfiguration().ldapConfiguration().extraPropertiesEntries()">
-                    <tr>
-                      <td>
-                        <span class="btn btn-danger" data-bind="click: function(){ removeLdapExtraProperty($data) }">
-                          <i class="icon-minus-sign icon-white" title="remove property"></i>
-                        </span>
-                      </td>
-                      <td data-bind="text: key"></td>
-                      <td data-bind="text: value"></td>
-                    </tr>
+                  <tbody data-bind="template: { name: 'redback-runtime-ldap-extra-properties-entries-tmpl', foreach: redbackRuntimeConfiguration().ldapConfiguration().extraPropertiesEntries() }">
                   </tbody>
                 </table>
               </div>
