@@ -256,7 +256,7 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
         {  text : $.i18n.prop('menu.users') , id: null},
         {  text : $.i18n.prop('menu.users.manage')          , id: "menu-users-list-a"                  , href: "#users"         , redback: "{permissions: ['archiva-manage-users']}", func: function(){displayUsersGrid();}},
         {  text : $.i18n.prop('menu.users.roles')           , id: "menu-roles-list-a"                  , href: "#roles"         , redback: "{permissions: ['archiva-manage-users']}", func: function(){displayRolesGrid();}},
-        {  text : $.i18n.prop('menu.users-runtime-configuration') , id: "menu-redback-runtime-configuration-list-a"  , href: "#redbackruntimeconfig" , redback: "{permissions: ['archiva-manage-configuration']}", func: function(){displayRedbackRuntimeConfiguration();}}
+        {  text : $.i18n.prop('menu.users-runtime-configuration') , id: "menu-redback-runtime-configuration-list-a"  , href: "#redbackruntimeconfig" , redback: "{permissions: ['archiva-manage-configuration']}", func: function(){require(['archiva/admin/features/generaladmin/main'],function(){displayRedbackRuntimeConfiguration();});}}
       ]);
 
       this.docsMenuItems = ko.observableArray([
