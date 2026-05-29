@@ -81,6 +81,11 @@ public class LdapConfiguration
     private String authenticationMethod;
 
     /**
+     * LDAP user search filter (ldap.config.mapper.attribute.user.filter).
+     */
+    private String userFilter;
+
+    /**
      *
      */
     private boolean bindAuthenticatorEnabled;
@@ -188,6 +193,16 @@ public class LdapConfiguration
     public void setAuthenticationMethod( String authenticationMethod )
     {
         this.authenticationMethod = authenticationMethod;
+    }
+
+    public String getUserFilter()
+    {
+        return userFilter;
+    }
+
+    public void setUserFilter( String userFilter )
+    {
+        this.userFilter = userFilter;
     }
 
     public Map<String, String> getExtraProperties()

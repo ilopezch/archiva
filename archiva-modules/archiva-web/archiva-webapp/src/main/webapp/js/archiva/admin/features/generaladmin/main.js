@@ -1046,7 +1046,7 @@ define("archiva/admin/features/generaladmin/main",["jquery","jquery.ui","i18n","
   }
 
   LdapConfiguration=function(hostName,port,ssl,baseDn,baseGroupsDn,contextFactory,bindDn,password,authenticationMethod,
-                             extraPropertiesEntries,writable,useRoleNameAsGroup,bindAuthenticatorEnabled){
+                             userFilter,extraPropertiesEntries,writable,useRoleNameAsGroup,bindAuthenticatorEnabled){
 
     var self=this;
     this.modified=ko.observable(false);
@@ -1087,8 +1087,14 @@ define("archiva/admin/features/generaladmin/main",["jquery","jquery.ui","i18n","
     this.authenticationMethod=ko.observable(authenticationMethod);
     this.authenticationMethod.subscribe(function(newValue){self.modified(true)});
 
+    this.userFilter=ko.observable(userFilter);
+    this.userFilter.subscribe(function(newValue){self.modified(true)});
+
     this.extraPropertiesEntries=ko.observableArray(extraPropertiesEntries);
     this.extraPropertiesEntries.subscribe(function(newValue){self.modified(true)});
+
+    this.newExtraPropertyKey=ko.observable('');
+    this.newExtraPropertyValue=ko.observable('');
 
     //private boolean writable = false;
     this.writable=ko.observable(writable);
@@ -1107,15 +1113,12 @@ define("archiva/admin/features/generaladmin/main",["jquery","jquery.ui","i18n","
   mapLdapConfiguration=function(data){
     $.log("mapLdapConfiguration");
       if(data){
-        var extraPropertiesEntries = data.extraPropertiesEntries == null ? []: $.each(data.extraPropertiesEntries,function(item){
-            return new Entry(item.key, item.value);
+        var extraPropertiesEntries = data.extraPropertiesEntries == null ? [] : $.map(data.extraPropertiesEntries, function(item){
+            return {key: item.key, value: item.value};
         });
-        if (!$.isArray(extraPropertiesEntries)){
-            extraPropertiesEntries=[];
-        }
         $.log("mapLdapConfiguration done");
         return new LdapConfiguration(data.hostName,data.port,data.ssl,data.baseDn,data.baseGroupsDn,data.contextFactory,data.bindDn,data.password,
-                                    data.authenticationMethod,extraPropertiesEntries,data.writable,data.useRoleNameAsGroup,data.bindAuthenticatorEnabled);
+                                    data.authenticationMethod,data.userFilter,extraPropertiesEntries,data.writable,data.useRoleNameAsGroup,data.bindAuthenticatorEnabled);
       }
       return null;
   }
@@ -1483,6 +1486,21 @@ define("archiva/admin/features/generaladmin/main",["jquery","jquery.ui","i18n","
        activatePopoverDoc();
      }
     });
+
+    addLdapExtraProperty=function(){
+      var ldapConf=self.redbackRuntimeConfiguration().ldapConfiguration();
+      var key=ldapConf.newExtraPropertyKey();
+      if (!key || !key.trim()){
+        return;
+      }
+      ldapConf.extraPropertiesEntries.push({key: key.trim(), value: ldapConf.newExtraPropertyValue()});
+      ldapConf.newExtraPropertyKey('');
+      ldapConf.newExtraPropertyValue('');
+    }
+
+    removeLdapExtraProperty=function(entry){
+      self.redbackRuntimeConfiguration().ldapConfiguration().extraPropertiesEntries.remove(entry);
+    }
 
     this.newLdapGroupMapping=ko.observable(new LdapGroupMapping("",[],false,null));
 

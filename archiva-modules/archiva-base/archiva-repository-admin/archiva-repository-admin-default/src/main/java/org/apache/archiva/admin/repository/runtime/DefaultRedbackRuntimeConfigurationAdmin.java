@@ -82,6 +82,7 @@ public class DefaultRedbackRuntimeConfigurationAdmin
         LDAP_MAPPER.addStringMapping( LDAP_BASEDN, LdapConfiguration::getBaseDn );
         LDAP_MAPPER.addStringMapping( LDAP_GROUPS_BASEDN, LdapConfiguration::getBaseGroupsDn );
         LDAP_MAPPER.addStringMapping( LDAP_BINDDN, LdapConfiguration::getBindDn );
+        LDAP_MAPPER.addStringMapping( LDAP_MAPPER_USER_ATTRIBUTE_FILTER, LdapConfiguration::getUserFilter );
         LDAP_MAPPER.addPrefixStringMapping( LDAP_GROUPS_ROLE_START_KEY, (String attributeName, List<LdapGroupMapping> mapping)-> {
             int index = mapping.indexOf( new LdapGroupMapping(
                 StringUtils.substringAfter( attributeName, LDAP_GROUPS_ROLE_START_KEY ) ) );
@@ -200,6 +201,9 @@ public class DefaultRedbackRuntimeConfigurationAdmin
                     userConfiguration.getString( LDAP_PASSWORD, null ) );
                 ldapConfiguration.setAuthenticationMethod(
                     userConfiguration.getString( LDAP_AUTHENTICATION_METHOD, null ) );
+
+                ldapConfiguration.setUserFilter(
+                    userConfiguration.getConcatenatedList( LDAP_MAPPER_USER_ATTRIBUTE_FILTER, null ) );
 
                 ldapConfiguration.setWritable(
                     userConfiguration.getBoolean( LDAP_WRITABLE, false ) );

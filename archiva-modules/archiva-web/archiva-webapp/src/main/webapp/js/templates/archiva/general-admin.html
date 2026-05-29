@@ -1051,7 +1051,57 @@
                        data-bind="value: redbackRuntimeConfiguration().ldapConfiguration().authenticationMethod"/>
               </div>
             </div>
-            <!-- TODO extraPropertiesEntries -->
+            <div class="control-group">
+              <label for="ldap-userFilter" class="control-label">
+                ${$.i18n.prop('redback.runtime.ldap.userFilter.label')}
+              </label>
+              <div class="controls">
+                <input type="text" id="ldap-userFilter" name="ldap-userFilter" class="input-xxlarge"
+                       data-bind="value: redbackRuntimeConfiguration().ldapConfiguration().userFilter"/>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label">${$.i18n.prop('redback.runtime.ldap.extraProperties.label')}</label>
+              <div class="controls">
+                <table class="table table-condensed" style="width:auto">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>${$.i18n.prop('redback.runtime.ldap.extraProperties.key.label')}</th>
+                      <th>${$.i18n.prop('redback.runtime.ldap.extraProperties.value.label')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <span class="btn btn-success" data-bind="click: addLdapExtraProperty">
+                          <i class="icon-plus-sign icon-white" title="add property"></i>
+                        </span>
+                      </td>
+                      <td>
+                        <input type="text" class="input-large"
+                               data-bind="value: redbackRuntimeConfiguration().ldapConfiguration().newExtraPropertyKey"/>
+                      </td>
+                      <td>
+                        <input type="text" class="input-large"
+                               data-bind="value: redbackRuntimeConfiguration().ldapConfiguration().newExtraPropertyValue"/>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tbody data-bind="foreach: redbackRuntimeConfiguration().ldapConfiguration().extraPropertiesEntries()">
+                    <tr>
+                      <td>
+                        <span class="btn btn-danger" data-bind="click: function(){ removeLdapExtraProperty($data) }">
+                          <i class="icon-minus-sign icon-white" title="remove property"></i>
+                        </span>
+                      </td>
+                      <td data-bind="text: key"></td>
+                      <td data-bind="text: value"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
         </form>
 
