@@ -1060,6 +1060,11 @@ public class ConfigurationRegistryWriter {
                 String authenticationMethod = "authenticationMethod";
                 registry.setString(prefix + authenticationMethod, value.getAuthenticationMethod());
             }
+            if (value.getUserFilter() != null
+            ) {
+                String userFilter = "userFilter";
+                registry.setString(prefix + userFilter, value.getUserFilter());
+            }
             String bindAuthenticatorEnabled = "bindAuthenticatorEnabled";
             registry.setBoolean(prefix + bindAuthenticatorEnabled, value.isBindAuthenticatorEnabled());
             String writable = "writable";

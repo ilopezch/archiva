@@ -1637,6 +1637,19 @@ public class ConfigurationRegistryReader {
         }
 
         value.setAuthenticationMethod(authenticationMethod);
+        List<String> userFilterList = registry.getList(prefix + "userFilter");
+        String userFilter = value.getUserFilter();
+        if (userFilterList != null && !userFilterList.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0, size = userFilterList.size(); i < size; i++) {
+                sb.append(userFilterList.get(i));
+                if (i < size - 1) {
+                    sb.append(',');
+                }
+            }
+            userFilter = sb.toString();
+        }
+        value.setUserFilter(userFilter);
         boolean bindAuthenticatorEnabled = registry.getBoolean(prefix + "bindAuthenticatorEnabled", value.isBindAuthenticatorEnabled());
         value.setBindAuthenticatorEnabled(bindAuthenticatorEnabled);
         boolean writable = registry.getBoolean(prefix + "writable", value.isWritable());
