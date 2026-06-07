@@ -36,6 +36,7 @@ import org.apache.archiva.redback.integration.filter.authentication.HttpAuthenti
 import org.apache.archiva.redback.policy.AccountLockedException;
 import org.apache.archiva.redback.policy.MustChangePasswordException;
 import org.apache.archiva.redback.system.SecuritySession;
+import org.apache.archiva.npm.repository.token.NpmApiTokenStore;
 import org.apache.archiva.repository.ManagedRepository;
 import org.apache.archiva.repository.RepositoryRegistry;
 import org.apache.archiva.repository.base.ArchivaRepositoryRegistry;
@@ -105,6 +106,7 @@ public class NpmRegistryServlet extends HttpServlet
     private ServletAuthenticator servletAuth;
     private HttpAuthenticator httpAuth;
     private RepositorySearch repositorySearch;
+    private NpmApiTokenStore apiTokenStore;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -152,6 +154,8 @@ public class NpmRegistryServlet extends HttpServlet
                                  "HttpAuthenticator; access control disabled" );
         repositorySearch = optionalBean( ctx, "repositorySearch#maven", RepositorySearch.class,
                                          "RepositorySearch; search endpoint will return 501" );
+        apiTokenStore = optionalBean( ctx, "npmApiTokenStore", NpmApiTokenStore.class,
+                                      "NpmApiTokenStore; generated API tokens will not be accepted" );
     }
 
     private <T> T optionalBean( WebApplicationContext ctx, String name, Class<T> type, String warnMessage )
@@ -1016,8 +1020,41 @@ public class NpmRegistryServlet extends HttpServlet
             return true; // security not configured — allow
         }
 
-        // Translate Bearer token (issued by web login) to Basic so Redback can verify it
         String authHeader = req.getHeader( "Authorization" );
+
+        // Server-issued personal access tokens (generated via the admin UI / REST API):
+        // resolve directly to their owning user and check repository authorization —
+        // these are not passwords, so Redback's credential authentication can't verify them.
+        if ( authHeader != null && authHeader.startsWith( "Bearer " ) && apiTokenStore != null )
+        {
+            String username = apiTokenStore.resolveUsername( authHeader.substring( 7 ).trim() );
+            if ( username != null )
+            {
+                try
+                {
+                    if ( servletAuth.isAuthorized( username, repoId, operation ) )
+                    {
+                        return true;
+                    }
+                }
+                catch ( UnauthorizedException e )
+                {
+                    // denied below
+                }
+                if ( ArchivaRoleConstants.OPERATION_READ_REPOSITORY.equals( operation ) )
+                {
+                    resp.setHeader( "WWW-Authenticate", "Basic realm=\"Archiva NPM Repository\"" );
+                    resp.sendError( HttpServletResponse.SC_UNAUTHORIZED, "API token does not grant access to this repository" );
+                }
+                else
+                {
+                    resp.sendError( HttpServletResponse.SC_FORBIDDEN, "API token does not grant access to this repository" );
+                }
+                return false;
+            }
+        }
+
+        // Translate Bearer token (issued by web login) to Basic so Redback can verify it
         if ( authHeader != null && authHeader.startsWith( "Bearer " ) )
         {
             final String basicValue = "Basic " + authHeader.substring( 7 ).trim();

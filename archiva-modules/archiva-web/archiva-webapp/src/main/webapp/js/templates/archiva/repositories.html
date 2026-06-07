@@ -1754,6 +1754,31 @@
                  data-bind="simpleGrid: gridViewModel,simpleGridTemplate:'ko_npm-repositoriesGrid',pageLinksId:'npm-repositoriesPagination',data:'npmRepositories'">
           </table>
           <div id="npm-repositoriesPagination"></div>
+          <div id="npm-token-panel" style="display:none;margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:4px;background:#f9f9f9">
+            <h4 style="margin-top:0">${$.i18n.prop('npm.token.panel.title')}</h4>
+            <p>${$.i18n.prop('npm.token.panel.repo')}: <strong id="npm-token-repo-id"></strong></p>
+            <p class="muted">${$.i18n.prop('npm.token.panel.help')}</p>
+
+            <div id="npm-token-list"></div>
+
+            <div class="control-group" style="margin-top:16px">
+              <label class="control-label" for="npm-token-label">${$.i18n.prop('npm.token.label')}</label>
+              <div class="controls">
+                <input type="text" id="npm-token-label" class="span6" placeholder="${$.i18n.prop('npm.token.label.placeholder')}"/>
+              </div>
+            </div>
+            <div id="npm-token-err" class="alert alert-error" style="display:none"></div>
+            <div style="margin-top:8px">
+              <button id="npm-token-generate-btn" class="btn btn-primary">${$.i18n.prop('npm.token.generate')}</button>
+              <button id="npm-token-close-btn" class="btn">${$.i18n.prop('cancel')}</button>
+            </div>
+            <div id="npm-token-result" style="display:none;margin-top:16px">
+              <div class="alert alert-info">${$.i18n.prop('npm.token.shown.once')}</div>
+              <label><strong>${$.i18n.prop('npm.token.npmrc.snippet')}</strong></label>
+              <textarea id="npm-token-snippet" class="span12" rows="3" readonly style="font-family:monospace;font-size:12px;margin-top:4px"></textarea>
+              <button id="npm-token-copy-btn" class="btn btn-info" style="margin-top:4px">${$.i18n.prop('npm.token.copy')}</button>
+            </div>
+          </div>
         </div>
         <div id="npm-repository-edit" class="pill-pane" data-bind='template:{name:"npm-repository-edit-tmpl"}'>
         </div>
@@ -1815,6 +1840,7 @@
     <th title="${ columnDefinition.title }">${ columnDefinition.headerText }</th>
     {{/each}}
     <th>${$.i18n.prop('scanned')}</th>
+    <th>${$.i18n.prop('npm.token')}</th>
     <th>${$.i18n.prop('edit')}</th>
     <th>${$.i18n.prop('delete')}</th>
   </tr>
@@ -1833,6 +1859,11 @@
       {{else}}
       <img src="images/dialog-error-22-22.png"/>
       {{/if}}
+    </td>
+    <td>
+      <a href="#" data-bind="click: function(){ showNpmTokenPanel(row) }">
+        <span class="btn btn-info"><i class="icon-key icon-white"/></span>
+      </a>
     </td>
     <td>
       <a href="#" data-bind="click: function(){ editNpmRepository(row) }">
