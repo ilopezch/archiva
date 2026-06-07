@@ -21,7 +21,6 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
 
   var NPM_API_BASE = "restServices/v2/archiva/repositories/npm/managed";
   var NPM_REMOTE_API_BASE = "restServices/v2/archiva/repositories/npm/remote";
-  var NPM_TOKEN_API_BASE = "restServices/v2/archiva/npm/tokens";
 
   NpmManagedRepository=function(id,name,location,description,scanned,schedulingDefinition){
     var self=this;
@@ -155,129 +154,6 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       activateNpmRepositoryEditTab();
       mainContent.find("#npm-repository-edit-li a").html($.i18n.prop('edit'));
       activateNpmRepositoryFormValidation();
-    }
-
-    showNpmTokenPanel=function(npmRepository){
-      var mainContent=$("#main-content");
-      var panel=mainContent.find("#npm-token-panel");
-      var repoId=npmRepository.id();
-      panel.find("#npm-token-repo-id").text(repoId);
-      panel.find("#npm-token-label").val("");
-      panel.find("#npm-token-err").hide();
-      panel.find("#npm-token-result").hide();
-      panel.show();
-
-      function buildSnippet(token){
-        var pageBase=window.location.href.replace(/#.*$/,"").replace(/[^\/]+$/,"");
-        var registryUrl=pageBase+"npm/"+repoId+"/";
-        var hostPart=registryUrl.replace(/^https?:/,"");
-        return hostPart+":_authToken="+token+"\nregistry="+registryUrl;
-      }
-
-      function formatTimestamp(ms){
-        return ms ? new Date(ms).toLocaleString() : $.i18n.prop("npm.token.never");
-      }
-
-      function loadTokens(){
-        var list=panel.find("#npm-token-list");
-        list.empty().append(mediumSpinnerImg());
-        $.ajax(NPM_TOKEN_API_BASE,{
-          type:"GET",
-          dataType:"json",
-          success:function(tokens){
-            list.empty();
-            if (!tokens || tokens.length===0){
-              list.append($("<p>").addClass("muted").text($.i18n.prop("npm.token.none")));
-              return;
-            }
-            var table=$("<table>").addClass("table table-striped table-condensed");
-            var headerRow=$("<tr>");
-            $.each(["npm.token.label","npm.token.created","npm.token.lastused"],function(i,key){
-              headerRow.append($("<th>").text($.i18n.prop(key)));
-            });
-            headerRow.append($("<th>"));
-            table.append($("<thead>").append(headerRow));
-            var tbody=$("<tbody>");
-            $.each(tokens,function(i,t){
-              var label=t.label?t.label:$.i18n.prop("npm.token.unlabeled");
-              var tr=$("<tr>");
-              tr.append($("<td>").text(label));
-              tr.append($("<td>").text(formatTimestamp(t.createdAt)));
-              tr.append($("<td>").text(formatTimestamp(t.lastUsedAt)));
-              var revokeBtn=$("<button>").addClass("btn btn-mini btn-danger").text($.i18n.prop("npm.token.revoke"));
-              revokeBtn.on("click",function(){
-                openDialogConfirm(
-                  function(){
-                    $.ajax(NPM_TOKEN_API_BASE+"/"+encodeURIComponent(t.id),{
-                      type:"DELETE",
-                      success:function(){
-                        displaySuccessMessage($.i18n.prop("npm.token.revoked",label));
-                        loadTokens();
-                      },
-                      error:function(data){
-                        var res=$.parseJSON(data.responseText);
-                        displayRestError(res);
-                      },
-                      complete:function(){
-                        closeDialogConfirm();
-                      }
-                    });
-                  },
-                  $.i18n.prop("ok"),
-                  $.i18n.prop("cancel"),
-                  $.i18n.prop("npm.token.revoke.confirm",label)
-                );
-              });
-              tr.append($("<td>").append(revokeBtn));
-              tbody.append(tr);
-            });
-            table.append(tbody);
-            list.append(table);
-          },
-          error:function(data){
-            list.empty();
-            var res=$.parseJSON(data.responseText);
-            displayRestError(res);
-          }
-        });
-      }
-
-      panel.find("#npm-token-generate-btn").off("click").on("click",function(){
-        panel.find("#npm-token-err").hide();
-        panel.find("#npm-token-result").hide();
-        var label=panel.find("#npm-token-label").val().trim();
-        $.ajax(NPM_TOKEN_API_BASE,{
-          type:"POST",
-          contentType:"application/json",
-          data:JSON.stringify({label:label}),
-          dataType:"json",
-          success:function(created){
-            panel.find("#npm-token-snippet").val(buildSnippet(created.token));
-            panel.find("#npm-token-result").show();
-            panel.find("#npm-token-label").val("");
-            loadTokens();
-          },
-          error:function(data){
-            var res=$.parseJSON(data.responseText);
-            displayRestError(res);
-          }
-        });
-      });
-
-      panel.find("#npm-token-copy-btn").off("click").on("click",function(){
-        var ta=panel.find("#npm-token-snippet").get(0);
-        ta.select();
-        document.execCommand("copy");
-        var btn=$(this);
-        btn.text($.i18n.prop("npm.token.copied"));
-        setTimeout(function(){ btn.text($.i18n.prop("npm.token.copy")); },2000);
-      });
-
-      panel.find("#npm-token-close-btn").off("click").on("click",function(){
-        panel.hide();
-      });
-
-      loadTokens();
     }
 
     removeNpmRepository=function(npmRepository){

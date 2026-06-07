@@ -553,65 +553,110 @@
 
 <script type="text/html" id="modal-user-edit-tmpl">
 
-  <form id="user-edit-form" class="form-horizontal">
-    <div id="modal-user-edit-err-message" class="alert-message error" style="display:none"></div>
-    <fieldset>
-      <div class="control-group">
-        <label class="control-label" for="username">${$.i18n.prop('username')}</label>
+  <ul class="nav nav-pills" id="modal-user-edit-pills" data-target="#modal-user-edit-pills-content">
+    <li class="active" id="modal-user-edit-details-li">
+      <a data-toggle="tab" href="#modal-user-edit-details">${$.i18n.prop('edit')}</a>
+    </li>
+    {{if !user.readOnly}}
+    <li id="modal-user-edit-tokens-li">
+      <a data-toggle="tab" href="#modal-user-edit-tokens">${$.i18n.prop('npm.token.tab.title')}</a>
+    </li>
+    {{/if}}
+  </ul>
+  <div class="pill-content" id="modal-user-edit-pills-content">
+    <div id="modal-user-edit-details" class="active pill-pane">
+      <form id="user-edit-form" class="form-horizontal">
+        <div id="modal-user-edit-err-message" class="alert-message error" style="display:none"></div>
+        <fieldset>
+          <div class="control-group">
+            <label class="control-label" for="username">${$.i18n.prop('username')}</label>
 
-        <div class="controls" id="username-div">
-          <span class="uneditable-input" data-bind="text: user.username"></span>
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="fullname">${$.i18n.prop('full.name')}</label>
+            <div class="controls" id="username-div">
+              <span class="uneditable-input" data-bind="text: user.username"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="fullname">${$.i18n.prop('full.name')}</label>
 
+            <div class="controls">
+              {{if user.readOnly}}
+              <span class="uneditable-input" data-bind="text: user.fullName"></span>
+              {{else}}
+              <input type="text" id="fullname" name="fullname" size="30" class="required" data-bind="value: user.fullName"/>
+              {{/if}}
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="email">${$.i18n.prop('email.address')}</label>
+
+            <div class="controls">
+              {{if user.readOnly}}
+              <span class="uneditable-input" data-bind="text: user.email"></span>
+              {{else}}
+              <input type="text" id="email" name="email" size="30" class="required email" data-bind="value: user.email"/>
+              {{/if}}
+            </div>
+          </div>
+          <div class="control-group" id="user-edit-form-current-password-div">
+            <label class="control-label" for="userEditFormCurrentPassword">${$.i18n.prop('password.existing')}</label>
+
+            <div class="controls">
+              <input type="password" id="userEditFormCurrentPassword" name="userEditFormCurrentPassword" class="required"
+                     value=""/>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="userEditFormNewPassword">${$.i18n.prop('password.new')}</label>
+
+            <div class="controls">
+              <input type="password" id="userEditFormNewPassword" name="userEditFormNewPassword" class="" value=""/>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="userEditFormNewPasswordConfirm">${$.i18n.prop('password.new.confirm')}</label>
+
+            <div class="controls">
+              <input type="password" id="userEditFormNewPasswordConfirm" name="userEditFormNewPasswordConfirm" class=""
+                     value=""/>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    {{if !user.readOnly}}
+    <div id="modal-user-edit-tokens" class="pill-pane">
+      <p class="muted">${$.i18n.prop('npm.token.panel.help')}</p>
+
+      <div id="npm-token-list"></div>
+
+      <div class="control-group" style="margin-top:16px">
+        <label class="control-label" for="npm-token-label">${$.i18n.prop('npm.token.label')}</label>
         <div class="controls">
-          {{if user.readOnly}}
-          <span class="uneditable-input" data-bind="text: user.fullName"></span>
-          {{else}}
-          <input type="text" id="fullname" name="fullname" size="30" class="required" data-bind="value: user.fullName"/>
-          {{/if}}
+          <input type="text" id="npm-token-label" class="span6" placeholder="${$.i18n.prop('npm.token.label.placeholder')}"/>
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="email">${$.i18n.prop('email.address')}</label>
-
+        <label class="control-label" for="npm-token-repo-select">${$.i18n.prop('npm.token.panel.repo')}</label>
         <div class="controls">
-          {{if user.readOnly}}
-          <span class="uneditable-input" data-bind="text: user.email"></span>
-          {{else}}
-          <input type="text" id="email" name="email" size="30" class="required email" data-bind="value: user.email"/>
-          {{/if}}
+          <select id="npm-token-repo-select" class="span6"></select>
         </div>
       </div>
-      <div class="control-group" id="user-edit-form-current-password-div">
-        <label class="control-label" for="userEditFormCurrentPassword">${$.i18n.prop('password.existing')}</label>
-
-        <div class="controls">
-          <input type="password" id="userEditFormCurrentPassword" name="userEditFormCurrentPassword" class="required"
-                 value=""/>
-        </div>
+      <div id="npm-token-err" class="alert alert-error" style="display:none"></div>
+      <div style="margin-top:8px">
+        <button id="npm-token-generate-btn" type="button" class="btn btn-primary">${$.i18n.prop('npm.token.generate')}</button>
       </div>
-
-      <div class="control-group">
-        <label class="control-label" for="userEditFormNewPassword">${$.i18n.prop('password.new')}</label>
-
-        <div class="controls">
-          <input type="password" id="userEditFormNewPassword" name="userEditFormNewPassword" class="" value=""/>
-        </div>
+      <div id="npm-token-result" style="display:none;margin-top:16px">
+        <div class="alert alert-info">${$.i18n.prop('npm.token.shown.once')}</div>
+        <label><strong>${$.i18n.prop('npm.token.npmrc.snippet')}</strong></label>
+        <textarea id="npm-token-snippet" class="span12" rows="3" readonly style="font-family:monospace;font-size:12px;margin-top:4px"></textarea>
+        <button id="npm-token-copy-btn" type="button" class="btn btn-info" style="margin-top:4px">${$.i18n.prop('npm.token.copy')}</button>
       </div>
-
-      <div class="control-group">
-        <label class="control-label" for="userEditFormNewPasswordConfirm">${$.i18n.prop('password.new.confirm')}</label>
-
-        <div class="controls">
-          <input type="password" id="userEditFormNewPasswordConfirm" name="userEditFormNewPasswordConfirm" class=""
-                 value=""/>
-        </div>
-      </div>
-    </fieldset>
-  </form>
+    </div>
+    {{/if}}
+  </div>
 
 </script>
 

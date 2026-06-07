@@ -19,6 +19,9 @@
 define("redback.user",["jquery","utils","i18n","jquery.validate","knockout","knockout.simpleGrid","purl","archiva.main"],
 function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
 
+  var NPM_TOKEN_API_BASE = "restServices/v2/archiva/npm/tokens";
+  var NPM_REPO_API_BASE = "restServices/v2/archiva/repositories/npm/managed";
+
   /**
    * object model for user with some function to create/update/delete users
    * @param username
@@ -604,6 +607,152 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
   }
 
   /**
+   * wires up the "Access Tokens" pane of the user-edit modal: lists, generates and revokes
+   * the current user's personal NPM API tokens
+   */
+  loadAccessTokensPanel=function(){
+    var panel=$("#modal-user-edit-tokens");
+    if (panel.length===0){
+      return;
+    }
+    var selectedRepoId=null;
+    panel.find("#npm-token-label").val("");
+    panel.find("#npm-token-err").hide();
+    panel.find("#npm-token-result").hide();
+
+    function buildSnippet(token){
+      if (!selectedRepoId){
+        return token;
+      }
+      var pageBase=window.location.href.replace(/#.*$/,"").replace(/[^\/]+$/,"");
+      var registryUrl=pageBase+"npm/"+selectedRepoId+"/";
+      var hostPart=registryUrl.replace(/^https?:/,"");
+      return hostPart+":_authToken="+token+"\nregistry="+registryUrl;
+    }
+
+    function formatTimestamp(ms){
+      return ms ? new Date(ms).toLocaleString() : $.i18n.prop("npm.token.never");
+    }
+
+    function loadTokens(){
+      var list=panel.find("#npm-token-list");
+      list.empty().append(mediumSpinnerImg());
+      $.ajax(NPM_TOKEN_API_BASE,{
+        type:"GET",
+        dataType:"json",
+        success:function(tokens){
+          list.empty();
+          if (!tokens || tokens.length===0){
+            list.append($("<p>").addClass("muted").text($.i18n.prop("npm.token.none")));
+            return;
+          }
+          var table=$("<table>").addClass("table table-striped table-condensed");
+          var headerRow=$("<tr>");
+          $.each(["npm.token.label","npm.token.created","npm.token.lastused"],function(i,key){
+            headerRow.append($("<th>").text($.i18n.prop(key)));
+          });
+          headerRow.append($("<th>"));
+          table.append($("<thead>").append(headerRow));
+          var tbody=$("<tbody>");
+          $.each(tokens,function(i,t){
+            var label=t.label?t.label:$.i18n.prop("npm.token.unlabeled");
+            var tr=$("<tr>");
+            tr.append($("<td>").text(label));
+            tr.append($("<td>").text(formatTimestamp(t.createdAt)));
+            tr.append($("<td>").text(formatTimestamp(t.lastUsedAt)));
+            var revokeBtn=$("<button>").attr("type","button").addClass("btn btn-mini btn-danger").text($.i18n.prop("npm.token.revoke"));
+            revokeBtn.on("click",function(){
+              openDialogConfirm(
+                function(){
+                  $.ajax(NPM_TOKEN_API_BASE+"/"+encodeURIComponent(t.id),{
+                    type:"DELETE",
+                    success:function(){
+                      displaySuccessMessage($.i18n.prop("npm.token.revoked",label));
+                      loadTokens();
+                    },
+                    error:function(data){
+                      var res=$.parseJSON(data.responseText);
+                      displayRestError(res);
+                    },
+                    complete:function(){
+                      closeDialogConfirm();
+                    }
+                  });
+                },
+                $.i18n.prop("ok"),
+                $.i18n.prop("cancel"),
+                $.i18n.prop("npm.token.revoke.confirm",label)
+              );
+            });
+            tr.append($("<td>").append(revokeBtn));
+            tbody.append(tr);
+          });
+          table.append(tbody);
+          list.append(table);
+        },
+        error:function(data){
+          list.empty();
+          var res=$.parseJSON(data.responseText);
+          displayRestError(res);
+        }
+      });
+    }
+
+    function loadRepositories(){
+      var select=panel.find("#npm-token-repo-select");
+      select.empty();
+      select.append($("<option>").val("").text($.i18n.prop("npm.token.repository.select")));
+      select.off("change").on("change",function(){
+        selectedRepoId=select.val()||null;
+      });
+      $.ajax(NPM_REPO_API_BASE,{
+        type:"GET",
+        dataType:"json",
+        success:function(data){
+          var repos=(data && data.data) ? data.data : [];
+          $.each(repos,function(i,repo){
+            select.append($("<option>").val(repo.id).text(repo.id));
+          });
+        }
+      });
+    }
+
+    panel.find("#npm-token-generate-btn").off("click").on("click",function(){
+      panel.find("#npm-token-err").hide();
+      panel.find("#npm-token-result").hide();
+      var label=panel.find("#npm-token-label").val().trim();
+      $.ajax(NPM_TOKEN_API_BASE,{
+        type:"POST",
+        contentType:"application/json",
+        data:JSON.stringify({label:label}),
+        dataType:"json",
+        success:function(created){
+          panel.find("#npm-token-snippet").val(buildSnippet(created.token));
+          panel.find("#npm-token-result").show();
+          panel.find("#npm-token-label").val("");
+          loadTokens();
+        },
+        error:function(data){
+          var res=$.parseJSON(data.responseText);
+          displayRestError(res);
+        }
+      });
+    });
+
+    panel.find("#npm-token-copy-btn").off("click").on("click",function(){
+      var ta=panel.find("#npm-token-snippet").get(0);
+      ta.select();
+      document.execCommand("copy");
+      var btn=$(this);
+      btn.text($.i18n.prop("npm.token.copied"));
+      setTimeout(function(){ btn.text($.i18n.prop("npm.token.copy")); },2000);
+    });
+
+    loadRepositories();
+    loadTokens();
+  }
+
+  /**
    * display modal box for updating current user details
    */
   editUserDetailsBox=function(){
@@ -646,6 +795,10 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
 
     var editUserDetailViewModel=new EditUserDetailViewModel(currentUser);
     ko.applyBindings(editUserDetailViewModel,$("#modal-user-edit-content").get(0));
+
+    if (!currentUser.readOnly){
+      loadAccessTokensPanel();
+    }
 
     if(currentUser.readOnly){
       $("#modal-user-edit-footer" ).hide();
