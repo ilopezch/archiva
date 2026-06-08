@@ -1027,6 +1027,7 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
       $("#logout-link").show();
       $("#register-link").hide();
       $("#change-password-link").show();
+      $("#npm-tokens-link").show();
       if (window.modalLoginWindow){
         window.modalLoginWindow.modal('hide');
       }
