@@ -557,11 +557,9 @@
     <li class="active" id="modal-user-edit-details-li">
       <a data-toggle="tab" href="#modal-user-edit-details">${$.i18n.prop('edit')}</a>
     </li>
-    {{if !user.readOnly}}
     <li id="modal-user-edit-tokens-li">
       <a data-toggle="tab" href="#modal-user-edit-tokens">${$.i18n.prop('npm.token.tab.title')}</a>
     </li>
-    {{/if}}
   </ul>
   <div class="pill-content" id="modal-user-edit-pills-content">
     <div id="modal-user-edit-details" class="active pill-pane">
@@ -626,7 +624,6 @@
       </form>
     </div>
 
-    {{if !user.readOnly}}
     <div id="modal-user-edit-tokens" class="pill-pane">
       <p class="muted">${$.i18n.prop('npm.token.panel.help')}</p>
 
@@ -655,7 +652,6 @@
         <button id="npm-token-copy-btn" type="button" class="btn btn-info" style="margin-top:4px">${$.i18n.prop('npm.token.copy')}</button>
       </div>
     </div>
-    {{/if}}
   </div>
 
 </script>

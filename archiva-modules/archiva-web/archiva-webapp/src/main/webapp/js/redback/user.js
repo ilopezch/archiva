@@ -796,9 +796,7 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
     var editUserDetailViewModel=new EditUserDetailViewModel(currentUser);
     ko.applyBindings(editUserDetailViewModel,$("#modal-user-edit-content").get(0));
 
-    if (!currentUser.readOnly){
-      loadAccessTokensPanel();
-    }
+    loadAccessTokensPanel();
 
     if(currentUser.readOnly){
       $("#modal-user-edit-footer" ).hide();
