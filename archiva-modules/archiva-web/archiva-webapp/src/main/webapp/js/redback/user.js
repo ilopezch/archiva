@@ -656,8 +656,8 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
             var label=t.label?t.label:$.i18n.prop("npm.token.unlabeled");
             var tr=$("<tr>");
             tr.append($("<td>").text(label));
-            tr.append($("<td>").text(formatTimestamp(t.createdAt)));
-            tr.append($("<td>").text(formatTimestamp(t.lastUsedAt)));
+            tr.append($("<td>").text(formatTimestamp(t.created_at)));
+            tr.append($("<td>").text(formatTimestamp(t.last_used_at)));
             var revokeBtn=$("<button>").attr("type","button").addClass("btn btn-mini btn-danger").text($.i18n.prop("npm.token.revoke"));
             revokeBtn.on("click",function(){
               openDialogConfirm(
