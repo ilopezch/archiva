@@ -97,6 +97,11 @@
                 <span class="btn btn-warning label force-upper-case">${$.i18n.prop('edit.details')}</span>
               </a>
             </li>
+            <li id="npm-tokens-link" style="display: none">
+              <a onclick="displayNpmAccessTokens();">
+                <span class="btn btn-info label force-upper-case">${$.i18n.prop('npm.token.tab.title')}</span>
+              </a>
+            </li>
             <li id="logout-link" style="display: none">
               <a onclick="logout(false);" id="logout-link-a">
                 <span class="btn btn-danger label force-upper-case">${$.i18n.prop('logout')}</span>

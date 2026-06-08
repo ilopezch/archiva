@@ -607,14 +607,12 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
   }
 
   /**
-   * wires up the "Access Tokens" pane of the user-edit modal: lists, generates and revokes
+   * displays a dedicated page listing, generating and revoking
    * the current user's personal NPM API tokens
    */
-  loadAccessTokensPanel=function(){
-    var panel=$("#modal-user-edit-tokens");
-    if (panel.length===0){
-      return;
-    }
+  displayNpmAccessTokens=function(){
+    var panel=$("#main-content");
+    panel.html($("#npmAccessTokensMain").tmpl());
     var selectedRepoId=null;
     panel.find("#npm-token-label").val("");
     panel.find("#npm-token-err").hide();
@@ -795,8 +793,6 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
 
     var editUserDetailViewModel=new EditUserDetailViewModel(currentUser);
     ko.applyBindings(editUserDetailViewModel,$("#modal-user-edit-content").get(0));
-
-    loadAccessTokensPanel();
 
     if(currentUser.readOnly){
       $("#modal-user-edit-footer" ).hide();

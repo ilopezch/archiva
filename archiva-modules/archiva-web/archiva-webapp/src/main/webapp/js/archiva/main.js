@@ -93,6 +93,7 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
     $("#register-link").show();
     $("#logout-link").hide();
     $("#change-password-link").hide();
+    $("#npm-tokens-link").hide();
     // cleanup karmas
     window.redbackModel.operatioNames=[];
     hideElementWithKarma();
@@ -851,13 +852,16 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
     var loginLink=$("#login-link");
     var registerLink=$("#register-link");
     var changePasswordLink=$("#change-password-link");
+    var npmTokensLink=$("#npm-tokens-link");
     if (!user) {
       loginLink.show();
       registerLink.show();
       changePasswordLink.hide();
+      npmTokensLink.hide();
       checkUrlParams();
     } else {
       changePasswordLink.show();
+      npmTokensLink.show();
       $("#logout-link").show();
       registerLink.hide();
       loginLink.hide();

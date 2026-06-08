@@ -19,6 +19,8 @@ package org.apache.archiva.rest.v2.svc.npm;
 
 import org.apache.archiva.npm.repository.token.NpmApiToken;
 import org.apache.archiva.npm.repository.token.NpmApiTokenStore;
+import org.apache.archiva.redback.integration.filter.authentication.basic.HttpBasicAuthentication;
+import org.apache.archiva.redback.system.SecuritySession;
 import org.apache.archiva.redback.users.User;
 import org.apache.archiva.rest.api.v2.model.NpmApiTokenCreated;
 import org.apache.archiva.rest.api.v2.model.NpmApiTokenInfo;
@@ -30,6 +32,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,6 +48,13 @@ import java.util.stream.Collectors;
 public class DefaultNpmTokenService extends AbstractService implements NpmTokenService
 {
     private final NpmApiTokenStore tokenStore;
+
+    @Inject
+    @Named( value = "httpAuthenticator#basic" )
+    private HttpBasicAuthentication httpAuthenticator;
+
+    @Context
+    private HttpServletRequest httpServletRequest;
 
     @Autowired
     public DefaultNpmTokenService( NpmApiTokenStore tokenStore )
@@ -77,6 +90,13 @@ public class DefaultNpmTokenService extends AbstractService implements NpmTokenS
     private String currentUsername() throws ArchivaRestServiceException
     {
         User user = getAuditInformation().getUser();
+        if ( user == null )
+        {
+            // The thread-local audit user is only populated for Bearer-token requests.
+            // Browser sessions authenticate via cookies, so fall back to the HTTP session.
+            SecuritySession securitySession = httpAuthenticator.getSecuritySession( httpServletRequest.getSession( true ) );
+            user = securitySession == null ? null : securitySession.getUser();
+        }
         if ( user == null )
         {
             throw new ArchivaRestServiceException( "Not authenticated", Response.Status.FORBIDDEN.getStatusCode() );
