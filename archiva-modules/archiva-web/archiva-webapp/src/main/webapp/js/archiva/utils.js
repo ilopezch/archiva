@@ -253,8 +253,7 @@ require(["jquery","jquery.tmpl","i18n","knockout"], function(jquery,jqueryTmpl,i
       for(var i=0; i<obj.errorMessages.length; i++ ) {
         if(obj.errorMessages[i].errorKey) {
           displayErrorMessage($.i18n.prop( obj.errorMessages[i].errorKey, obj.errorMessages[i].args ),idToAppend);
-        }
-        if(obj.errorMessages[i].message) {
+        } else if(obj.errorMessages[i].message) {
           displayErrorMessage(obj.errorMessages[i].message,idToAppend);
         }
       }

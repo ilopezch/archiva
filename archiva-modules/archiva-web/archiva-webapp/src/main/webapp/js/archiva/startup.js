@@ -33,6 +33,10 @@ function(jquery,sammy,utils) {
     dataType: 'json',
     statusCode: {
       403: function() {
+        // Login failures are handled by errorLoginCallbackFn; skip the generic handler for them.
+        if (this.url && this.url.indexOf('loginService/logIn') !== -1) {
+          return;
+        }
         removeSmallSpinnerImg();
         removeMediumSpinnerImg("#main-content");
         clearUserMessages();

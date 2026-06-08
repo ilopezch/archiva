@@ -1032,6 +1032,7 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
         window.modalLoginWindow.modal('hide');
       }
       clearForm("#user-login-form");
+      clearUserMessages();
       decorateMenuWithKarma(user);
 
       // Token for origin validation
