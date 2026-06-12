@@ -185,6 +185,14 @@ public class DefaultRpmManagedRepositoryService extends AbstractService implemen
         try
         {
             managedRepository.setId( repositoryId );
+            // Validator requires a non-blank cron expression; fall back to the current value so that
+            // callers who do not send schedulingDefinition (e.g. after a GPG key rotation) do not fail.
+            if ( StringUtils.isBlank( managedRepository.getSchedulingDefinition() ) )
+            {
+                String existingSched = existing.getSchedulingDefinition();
+                managedRepository.setSchedulingDefinition(
+                    StringUtils.isNotBlank( existingSched ) ? existingSched : "0 0 * * * ?" );
+            }
             org.apache.archiva.admin.model.beans.ManagedRepository bean = toAdminBean( managedRepository );
             managedRepositoryAdmin.updateManagedRepository( bean, false, getAuditInformation(), false );
             ManagedRepository updated = repositoryRegistry.getManagedRepository( repositoryId );

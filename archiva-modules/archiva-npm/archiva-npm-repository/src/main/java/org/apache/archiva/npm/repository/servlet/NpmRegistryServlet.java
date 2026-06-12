@@ -38,6 +38,7 @@ import org.apache.archiva.redback.policy.MustChangePasswordException;
 import org.apache.archiva.redback.system.SecuritySession;
 import org.apache.archiva.npm.repository.token.NpmApiTokenStore;
 import org.apache.archiva.repository.ManagedRepository;
+import org.apache.archiva.repository.RepositoryGroup;
 import org.apache.archiva.repository.RepositoryRegistry;
 import org.apache.archiva.repository.base.ArchivaRepositoryRegistry;
 import org.apache.archiva.repository.storage.StorageAsset;
@@ -68,6 +69,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -190,6 +192,12 @@ public class NpmRegistryServlet extends HttpServlet
         ManagedRepository repo = repositoryRegistry.getManagedRepository( repoId );
         if ( repo == null )
         {
+            RepositoryGroup group = repositoryRegistry.getRepositoryGroup( repoId );
+            if ( group != null )
+            {
+                handleGroupGet( group, parts, req, resp );
+                return;
+            }
             log.info( "NPM GET 404 — repository '{}' not found in registry", repoId );
             resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Repository not found: " + repoId );
             return;
@@ -257,6 +265,11 @@ public class NpmRegistryServlet extends HttpServlet
         ManagedRepository repo = repositoryRegistry.getManagedRepository( repoId );
         if ( repo == null )
         {
+            if ( repositoryRegistry.getRepositoryGroup( repoId ) != null )
+            {
+                resp.sendError( HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Cannot publish to a repository group" );
+                return;
+            }
             resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Repository not found: " + repoId );
             return;
         }
@@ -295,7 +308,8 @@ public class NpmRegistryServlet extends HttpServlet
         }
         String repoId = parts[0];
 
-        if ( repositoryRegistry.getManagedRepository( repoId ) == null )
+        if ( repositoryRegistry.getManagedRepository( repoId ) == null
+             && repositoryRegistry.getRepositoryGroup( repoId ) == null )
         {
             resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Repository not found: " + repoId );
             return;
@@ -334,6 +348,11 @@ public class NpmRegistryServlet extends HttpServlet
         ManagedRepository repo = repositoryRegistry.getManagedRepository( repoId );
         if ( repo == null )
         {
+            if ( repositoryRegistry.getRepositoryGroup( repoId ) != null )
+            {
+                resp.sendError( HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Cannot unpublish from a repository group" );
+                return;
+            }
             resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Repository not found: " + repoId );
             return;
         }
@@ -526,6 +545,101 @@ public class NpmRegistryServlet extends HttpServlet
         resp.setContentType( "application/json" );
         resp.setStatus( HttpServletResponse.SC_OK );
         mapper.writeValue( resp.getOutputStream(), response );
+    }
+
+    // ---- Group GET handler ----------------------------------------------
+
+    /**
+     * Resolves a GET request against a repository group by iterating members in their
+     * declared order. The first member that holds (or can proxy-fetch) the requested
+     * asset serves the response. Write operations (publish, unpublish) are rejected
+     * with 405 at the doGet/doPut/doDelete level before this method is reached.
+     */
+    private void handleGroupGet( RepositoryGroup group, String[] parts,
+                                 HttpServletRequest req, HttpServletResponse resp )
+        throws IOException
+    {
+        String groupId = group.getId();
+        log.info( "NPM GROUP GET groupId={} parts={}", groupId, java.util.Arrays.toString( parts ) );
+
+        // web login done polling — no auth required; UUID is the shared secret
+        if ( parts.length >= 4 && "-".equals( parts[1] ) && "v1".equals( parts[2] ) && "done".equals( parts[3] ) )
+        {
+            handleWebLoginDone( req, resp );
+            return;
+        }
+
+        if ( !checkReadAccess( req, resp, groupId ) )
+        {
+            return;
+        }
+
+        List<ManagedRepository> members = group.getRepositories();
+
+        // search — delegate to first member that has a search index
+        if ( parts.length >= 4 && "-".equals( parts[1] ) && "v1".equals( parts[2] ) && "search".equals( parts[3] ) )
+        {
+            if ( members.isEmpty() )
+            {
+                resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Group has no member repositories" );
+                return;
+            }
+            serveSearch( members.get( 0 ), req, resp );
+            return;
+        }
+
+        // dist-tags — check members in declared order
+        if ( parts.length >= 5 && "-".equals( parts[1] ) && "package".equals( parts[2] )
+            && "dist-tags".equals( parts[4] ) )
+        {
+            for ( ManagedRepository member : members )
+            {
+                StorageAsset asset = member.getAsset( parts[3] + "/package.json" );
+                if ( asset.exists() )
+                {
+                    serveDistTags( member, parts[3], resp );
+                    return;
+                }
+            }
+            resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Package not found: " + parts[3] );
+            return;
+        }
+
+        NpmRequest npmReq = NpmRequest.parse( parts );
+        if ( npmReq == null )
+        {
+            resp.sendError( HttpServletResponse.SC_BAD_REQUEST, "Unrecognised npm path" );
+            return;
+        }
+
+        // Walk members in declared order; first hit (local or proxy-fetched) wins
+        String assetPath = npmReq.tarball != null
+            ? npmReq.packagePath() + "/-/" + npmReq.tarball
+            : npmReq.packagePath() + "/package.json";
+
+        for ( ManagedRepository member : members )
+        {
+            StorageAsset asset = resolveWithProxy( member, assetPath );
+            if ( asset != null && asset.exists() )
+            {
+                if ( npmReq.tarball != null )
+                {
+                    serveTarball( member, npmReq, resp );
+                }
+                else if ( npmReq.version != null )
+                {
+                    serveVersionMetadata( member, npmReq, resp );
+                }
+                else
+                {
+                    serveMetadata( member, npmReq, resp );
+                }
+                return;
+            }
+        }
+
+        resp.sendError( HttpServletResponse.SC_NOT_FOUND,
+                        "Package not found in group '" + groupId + "': " + npmReq.packageName() );
     }
 
     // ---- Web login handlers ---------------------------------------------

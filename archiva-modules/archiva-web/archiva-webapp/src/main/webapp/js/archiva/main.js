@@ -1038,6 +1038,8 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
       // Token for origin validation
       $("#login-welcome" ).show();
       $("#welcome-label" ).html( $.i18n.prop("user.login.welcome",user.username()));
+      // reload current page to reflect user's karma
+      window.sammyArchivaApplication.refresh();
       return;
     }
     var modalLoginErrMsg=$("#modal-login-err-message");
@@ -1051,19 +1053,19 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
    */
   errorLoginCallbackFn= function(result) {
     var obj = jQuery.parseJSON(result.responseText);
+    $("#modal-login-err-message").empty();
     displayRedbackError(obj,"modal-login-err-message");
     $("#modal-login-err-message").show();
   };
 
   /**
-   * callback complate function on rest login call. remove spinner from modal login box
+   * callback complete function on rest login call. remove spinner from modal login box
    * @param result
    */
   completeLoginCallbackFn=function(){
+    window._loginCallActive = false;
     $("#modal-login-ok").button("reset");
     $("#small-spinner").remove();
-    // force current screen reload to consider user karma
-    window.sammyArchivaApplication.refresh();
   };
 
   drawQuickSearchAutocomplete=function(selector){

@@ -345,9 +345,6 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
    */
   loginBox=function(){
 
-    if (window.modalLoginWindow!=null){
-      window.modalLoginWindow=null;
-    }
     if (window.modalLoginWindow==null) {
       window.modalLoginWindow = $("#modal-login").modal();
       window.modalLoginWindow.on('hidden', function () {
@@ -363,6 +360,8 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
           $("#modal-login-ok" ).trigger("click");
         }
       });
+    } else {
+      window.modalLoginWindow.modal('show');
     }
 
     var user=getUserFromLoginCookie();
@@ -544,6 +543,7 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
   loginCall=function(username,password,rememberme,successCallbackFn, errorCallbackFn, completeCallbackFn) {
     var url = 'restServices/redbackServices/loginService/logIn';
 
+    window._loginCallActive = true;
     $.ajax({
       url: url,
       type: 'POST',

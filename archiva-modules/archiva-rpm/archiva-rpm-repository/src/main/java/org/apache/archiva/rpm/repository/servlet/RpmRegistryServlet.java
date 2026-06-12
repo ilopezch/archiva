@@ -31,6 +31,8 @@ import org.apache.archiva.repository.RepositoryGroup;
 import org.apache.archiva.repository.RepositoryRegistry;
 import org.apache.archiva.repository.RepositoryType;
 import org.apache.archiva.rpm.repository.repodata.RepomdGenerator;
+import org.apache.archiva.rpm.repository.repodata.RpmHeaderParser;
+import org.apache.archiva.rpm.repository.repodata.RpmPackageInfo;
 import org.apache.archiva.security.ServletAuthenticator;
 import org.apache.archiva.security.common.ArchivaRoleConstants;
 import org.slf4j.Logger;
@@ -39,14 +41,17 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -88,6 +93,11 @@ import java.util.stream.Collectors;
  * An optional {@code X-Checksum-SHA256} request header is verified against the
  * uploaded bytes before they are committed to storage.
  */
+@MultipartConfig(
+    maxFileSize      = 512L * 1024 * 1024,   // 512 MB per file
+    maxRequestSize   = 520L * 1024 * 1024,   // 520 MB per request
+    fileSizeThreshold =     1024 * 1024       // spool to disk after 1 MB
+)
 public class RpmRegistryServlet extends HttpServlet
 {
     private static final long serialVersionUID = 1L;
@@ -452,6 +462,170 @@ public class RpmRegistryServlet extends HttpServlet
         }
 
         resp.setStatus( HttpServletResponse.SC_CREATED );
+    }
+
+    // -------------------------------------------------------------------------
+    // POST — upload an RPM via multipart/form-data or raw body
+    // -------------------------------------------------------------------------
+
+    /**
+     * Accepts an RPM upload at {@code POST /rpm/{repoId}/upload}.
+     *
+     * <p>Two request formats are supported:
+     * <ul>
+     *   <li><b>multipart/form-data</b> — field name {@code file} (e.g. {@code curl -F file=@pkg.rpm})</li>
+     *   <li><b>raw body</b> — {@code Content-Type: application/x-rpm} or {@code application/octet-stream}</li>
+     * </ul>
+     *
+     * <p>The RPM header is parsed automatically to derive the canonical filename
+     * and destination path ({@code RPMS/{arch}/} or {@code SRPMS/}).
+     * Repodata is rebuilt on success.
+     *
+     * <p>Returns {@code 201 Created} with a {@code Location} header and a JSON body:
+     * <pre>
+     * {"name":"mypkg","version":"1.0","release":"1","arch":"x86_64","location":"RPMS/x86_64/mypkg-1.0-1.x86_64.rpm"}
+     * </pre>
+     */
+    @Override
+    protected void doPost( HttpServletRequest req, HttpServletResponse resp )
+        throws ServletException, IOException
+    {
+        RpmRequest rpmReq = parse( req );
+        if ( rpmReq == null || !"upload".equals( rpmReq.path ) )
+        {
+            resp.sendError( HttpServletResponse.SC_BAD_REQUEST,
+                "POST is only supported at /rpm/{repoId}/upload" );
+            return;
+        }
+
+        ManagedRepository repo = resolveRepo( rpmReq.repoId, resp );
+        if ( repo == null ) return;
+
+        if ( !checkWriteAccess( req, resp, rpmReq.repoId ) ) return;
+
+        Path repoRoot = repo.getRoot().getFilePath();
+        Path tempFile = Files.createTempFile( "archiva-rpm-upload-", ".tmp" );
+        try
+        {
+            bufferUpload( req, tempFile );
+
+            RpmPackageInfo info;
+            try ( InputStream in = Files.newInputStream( tempFile ) )
+            {
+                info = RpmHeaderParser.parseHeader( in );
+            }
+            catch ( IOException e )
+            {
+                log.warn( "Uploaded file is not a valid RPM: {}", e.getMessage() );
+                resp.sendError( HttpServletResponse.SC_BAD_REQUEST,
+                    "Not a valid RPM file: " + e.getMessage() );
+                return;
+            }
+
+            if ( isBlank( info.name ) || isBlank( info.version )
+                || isBlank( info.release ) || isBlank( info.arch ) )
+            {
+                resp.sendError( HttpServletResponse.SC_BAD_REQUEST,
+                    "RPM header is missing required fields (name, version, release, arch)" );
+                return;
+            }
+
+            String filename = info.name + "-" + info.version + "-" + info.release
+                + "." + info.arch + ".rpm";
+            String subdir   = "src".equals( info.arch ) ? "SRPMS" : "RPMS/" + info.arch;
+            String rpmPath  = subdir + "/" + filename;
+
+            Path target = repoRoot.resolve( rpmPath ).normalize();
+            if ( !target.startsWith( repoRoot ) )
+            {
+                resp.sendError( HttpServletResponse.SC_FORBIDDEN, "Path traversal rejected" );
+                return;
+            }
+
+            Files.createDirectories( target.getParent() );
+            Files.move( tempFile, target, StandardCopyOption.REPLACE_EXISTING );
+            tempFile = null;
+
+            log.info( "Uploaded RPM {} to repo {} via POST", rpmPath, rpmReq.repoId );
+
+            try
+            {
+                repomdGenerator.rebuild( repoRoot );
+            }
+            catch ( IOException e )
+            {
+                log.error( "Failed to rebuild repodata after POST upload: {}", e.getMessage(), e );
+                resp.setStatus( HttpServletResponse.SC_ACCEPTED );
+                sendUploadJson( resp, rpmPath, info );
+                return;
+            }
+
+            String location = req.getContextPath() + "/rpm/" + rpmReq.repoId + "/" + rpmPath;
+            resp.setStatus( HttpServletResponse.SC_CREATED );
+            resp.setHeader( "Location", location );
+            sendUploadJson( resp, rpmPath, info );
+        }
+        finally
+        {
+            if ( tempFile != null )
+            {
+                try { Files.deleteIfExists( tempFile ); } catch ( IOException ignored ) { }
+            }
+        }
+    }
+
+    /**
+     * Reads the RPM bytes into {@code dest} from either a multipart {@code file} part
+     * or the raw request body.
+     */
+    private void bufferUpload( HttpServletRequest req, Path dest ) throws ServletException, IOException
+    {
+        String contentType = req.getContentType();
+        if ( contentType != null && contentType.startsWith( "multipart/" ) )
+        {
+            Part filePart = req.getPart( "file" );
+            if ( filePart == null )
+            {
+                throw new ServletException( "Multipart field 'file' is required" );
+            }
+            try ( InputStream in = filePart.getInputStream() )
+            {
+                Files.copy( in, dest, StandardCopyOption.REPLACE_EXISTING );
+            }
+        }
+        else
+        {
+            try ( InputStream in = req.getInputStream() )
+            {
+                Files.copy( in, dest, StandardCopyOption.REPLACE_EXISTING );
+            }
+        }
+    }
+
+    private static void sendUploadJson( HttpServletResponse resp, String location, RpmPackageInfo info )
+        throws IOException
+    {
+        byte[] json = ( "{"
+            + "\"name\":\""    + jsonEsc( info.name )    + "\","
+            + "\"version\":\"" + jsonEsc( info.version ) + "\","
+            + "\"release\":\"" + jsonEsc( info.release ) + "\","
+            + "\"arch\":\""    + jsonEsc( info.arch )    + "\","
+            + "\"location\":\"" + jsonEsc( location )    + "\""
+            + "}" ).getBytes( StandardCharsets.UTF_8 );
+        resp.setContentType( "application/json" );
+        resp.setContentLength( json.length );
+        resp.getOutputStream().write( json );
+    }
+
+    private static String jsonEsc( String s )
+    {
+        if ( s == null ) return "";
+        return s.replace( "\\", "\\\\" ).replace( "\"", "\\\"" );
+    }
+
+    private static boolean isBlank( String s )
+    {
+        return s == null || s.isBlank();
     }
 
     // -------------------------------------------------------------------------

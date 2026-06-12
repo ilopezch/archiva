@@ -123,6 +123,11 @@
       org.apache.archiva.rpm.repository.servlet.RpmRegistryServlet
     </servlet-class>
     <load-on-startup>2</load-on-startup>
+    <multipart-config>
+      <max-file-size>536870912</max-file-size>      <!-- 512 MB -->
+      <max-request-size>545259520</max-request-size> <!-- 520 MB -->
+      <file-size-threshold>1048576</file-size-threshold> <!-- 1 MB -->
+    </multipart-config>
   </servlet>
 
   <servlet-mapping>
