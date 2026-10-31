@@ -65,6 +65,19 @@ public interface NpmTokenService
     List<NpmApiTokenInfo> getTokens()
         throws ArchivaRestServiceException;
 
+    @GET
+    @Path( "repositories" )
+    @Produces( {APPLICATION_JSON} )
+    @RedbackAuthorization( noRestriction = false, noPermission = true )
+    @Operation( summary = "Lists the ids of the NPM repositories the current user is allowed to read.",
+        responses = {
+            @ApiResponse( responseCode = "200", description = "List of NPM repository ids" ),
+            @ApiResponse( responseCode = "403", description = "Not authenticated" )
+        }
+    )
+    List<String> getAccessibleRepositories()
+        throws ArchivaRestServiceException;
+
     @POST
     @Consumes( {APPLICATION_JSON} )
     @Produces( {APPLICATION_JSON} )

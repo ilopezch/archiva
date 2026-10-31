@@ -38,6 +38,10 @@ import org.apache.archiva.rest.api.model.SearchRequest;
 import org.apache.archiva.rest.api.model.StringList;
 import org.apache.archiva.rest.api.services.ArchivaRestServiceException;
 import org.apache.archiva.rest.api.services.SearchService;
+import org.apache.archiva.rest.services.utils.ArtifactBuilder;
+import org.apache.archiva.repository.ManagedRepository;
+import org.apache.archiva.repository.RepositoryType;
+import org.apache.archiva.admin.model.RepositoryAdminException;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -49,6 +53,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.stream.Stream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -83,10 +90,13 @@ public class DefaultSearchService
         SearchResultLimits limits = new SearchResultLimits( 0 );
         try
         {
+            List<String> observableRepos = getObservableRepos();
             SearchResults searchResults =
-                repositorySearch.search( getPrincipal(), getObservableRepos(), queryString, limits,
+                repositorySearch.search( getPrincipal(), observableRepos, queryString, limits,
                                          Collections.<String>emptyList() );
-            return getArtifacts( searchResults );
+            List<Artifact> artifacts = new ArrayList<>( getArtifacts( searchResults ) );
+            artifacts.addAll( searchPackageRepositories( observableRepos, queryString ) );
+            return artifacts;
 
         }
         catch ( RepositorySearchException e )
@@ -105,8 +115,8 @@ public class DefaultSearchService
         {
             return Collections.emptyList();
         }
-        List<String> repositories = searchRequest.getRepositories();
-        if ( repositories == null || repositories.isEmpty() )
+        List<String> repositories = withoutAllPseudoRepository( searchRequest.getRepositories() );
+        if ( repositories.isEmpty() )
         {
             repositories = getObservableRepos();
         }
@@ -116,7 +126,11 @@ public class DefaultSearchService
         {
             SearchResults searchResults = repositorySearch.search( getPrincipal(), repositories, queryString, limits,
                                                                    Collections.<String>emptyList() );
-            return getArtifacts( searchResults );
+            log.info( "Quick search '{}' in {} repositories: {} maven artifacts", queryString, repositories.size(),
+                      searchResults == null ? 0 : searchResults.getHits().size() );
+            List<Artifact> artifacts = new ArrayList<>( getArtifacts( searchResults ) );
+            artifacts.addAll( searchPackageRepositories( repositories, queryString ) );
+            return artifacts;
 
         }
         catch ( RepositorySearchException e )
@@ -124,6 +138,141 @@ public class DefaultSearchService
             log.error( e.getMessage(), e );
             throw new ArchivaRestServiceException( e.getMessage(), e );
         }
+    }
+
+    /**
+     * The search form offers an "All" entry that is not a repository; it (like an empty list) means every
+     * repository the user can observe.
+     */
+    private static List<String> withoutAllPseudoRepository( List<String> repositories )
+    {
+        List<String> result = new ArrayList<>();
+        if ( repositories != null )
+        {
+            for ( String repoId : repositories )
+            {
+                if ( StringUtils.isNotBlank( repoId ) && !"all".equalsIgnoreCase( repoId.trim() ) )
+                {
+                    result.add( repoId );
+                }
+            }
+        }
+        return result;
+    }
+
+    private static final int MAX_PACKAGE_HITS = 500;
+
+    /**
+     * NPM and RPM repositories have no Lucene index; their artifacts are registered in the metadata repository by
+     * the repository consumers. Every whitespace separated term must be part of the namespace (npm scope / rpm
+     * arch), name, version or file name of an artifact (case insensitive).
+     */
+    private List<Artifact> searchPackageRepositories( List<String> repositories, String queryString )
+        throws ArchivaRestServiceException
+    {
+        List<String> terms = new ArrayList<>();
+        for ( String term : StringUtils.split( queryString.toLowerCase( Locale.ROOT ) ) )
+        {
+            terms.add( term );
+        }
+        List<ManagedRepository> packageRepos = new ArrayList<>();
+        for ( String repoId : new HashSet<>( repositories ) )
+        {
+            ManagedRepository repo = repositoryRegistry.getManagedRepository( repoId );
+            if ( repo != null && ( RepositoryType.NPM.equals( repo.getType() )
+                || RepositoryType.RPM.equals( repo.getType() ) ) )
+            {
+                packageRepos.add( repo );
+            }
+        }
+        if ( terms.isEmpty() || packageRepos.isEmpty() )
+        {
+            log.info( "Package search '{}': no npm/rpm repository among {}", queryString, repositories );
+            return Collections.emptyList();
+        }
+
+        List<Artifact> artifacts = new ArrayList<>();
+        RepositorySession repositorySession = null;
+        try
+        {
+            repositorySession = repositorySessionFactory.createSession();
+            MetadataRepository metadataRepository = repositorySession.getRepository();
+            for ( ManagedRepository repo : packageRepos )
+            {
+                try ( Stream<ArtifactMetadata> stream =
+                          metadataRepository.getArtifactByDateRangeStream( repositorySession, repo.getId(), null, null ) )
+                {
+                    stream.filter( md -> matchesTerms( md, terms ) )
+                        .limit( MAX_PACKAGE_HITS - artifacts.size() )
+                        .forEach( md -> artifacts.add( buildPackageArtifact( repo, md ) ) );
+                }
+                if ( artifacts.size() >= MAX_PACKAGE_HITS )
+                {
+                    break;
+                }
+            }
+        }
+        catch ( MetadataRepositoryException e )
+        {
+            log.error( e.getMessage(), e );
+            throw new ArchivaRestServiceException( e.getMessage(), e );
+        }
+        finally
+        {
+            if ( repositorySession != null )
+            {
+                repositorySession.close();
+            }
+        }
+        log.info( "Package search '{}': {} hits in {} npm/rpm repositories", queryString, artifacts.size(),
+                  packageRepos.size() );
+        artifacts.sort( Comparator.comparing( Artifact::getArtifactId, Comparator.nullsFirst( String::compareToIgnoreCase ) )
+                            .thenComparing( Artifact::getVersion, Comparator.nullsFirst( String::compareTo ) ) );
+        return artifacts;
+    }
+
+    private static boolean matchesTerms( ArtifactMetadata md, List<String> terms )
+    {
+        String haystack = ( StringUtils.defaultString( md.getNamespace() ) + " " + StringUtils.defaultString( md.getProject() )
+            + " " + StringUtils.defaultString( md.getVersion() ) + " " + StringUtils.defaultString( md.getId() ) )
+            .toLowerCase( Locale.ROOT );
+        for ( String term : terms )
+        {
+            if ( !haystack.contains( term ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Artifact buildPackageArtifact( ManagedRepository repo, ArtifactMetadata md )
+    {
+        boolean npm = RepositoryType.NPM.equals( repo.getType() );
+        String namespace = StringUtils.defaultString( md.getNamespace() );
+        String extension = npm ? "tgz" : "rpm";
+        Artifact artifact = new Artifact( namespace, md.getProject(), md.getVersion() );
+        artifact.setRepositoryId( repo.getId() );
+        artifact.setContext( repo.getId() );
+        artifact.setPackaging( extension );
+        artifact.setType( extension );
+        artifact.setFileExtension( extension );
+        artifact.setId( md.getId() );
+        artifact.setSize( ArtifactBuilder.formatSize( md.getSize() ) );
+        // npm: [@scope/]name/-/name-version.tgz, rpm: RPMS/arch/file.rpm (namespace is the architecture)
+        String path = npm
+            ? ( namespace.isEmpty() ? "" : namespace + "/" ) + md.getProject() + "/-/" + md.getId()
+            : "RPMS/" + namespace + "/" + md.getId();
+        artifact.setPath( path );
+        try
+        {
+            artifact.setUrl( getBaseUrl() + ( npm ? "/npm/" : "/rpm/" ) + repo.getId() + "/" + path );
+        }
+        catch ( RepositoryAdminException e )
+        {
+            log.warn( "Cannot determine base url: {}", e.getMessage() );
+        }
+        return artifact;
     }
 
     @Override
@@ -165,7 +314,8 @@ public class DefaultSearchService
         limits.setPageSize( searchRequest.getPageSize() );
 
         // if no repos set we use ones available for the user
-        if ( searchField.getRepositories() == null || searchField.getRepositories().isEmpty() )
+        searchField.setRepositories( withoutAllPseudoRepository( searchField.getRepositories() ) );
+        if ( searchField.getRepositories().isEmpty() )
         {
             searchField.setRepositories( getObservableRepos() );
         }

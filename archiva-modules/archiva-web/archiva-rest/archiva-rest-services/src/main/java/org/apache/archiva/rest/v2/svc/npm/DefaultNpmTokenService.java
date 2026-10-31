@@ -19,6 +19,11 @@ package org.apache.archiva.rest.v2.svc.npm;
 
 import org.apache.archiva.npm.repository.token.NpmApiToken;
 import org.apache.archiva.npm.repository.token.NpmApiTokenStore;
+import org.apache.archiva.repository.ManagedRepository;
+import org.apache.archiva.repository.RepositoryRegistry;
+import org.apache.archiva.repository.RepositoryType;
+import org.apache.archiva.security.ArchivaSecurityException;
+import org.apache.archiva.security.UserRepositories;
 import org.apache.archiva.redback.integration.filter.authentication.basic.HttpBasicAuthentication;
 import org.apache.archiva.redback.system.SecuritySession;
 import org.apache.archiva.redback.users.User;
@@ -53,6 +58,12 @@ public class DefaultNpmTokenService extends AbstractService implements NpmTokenS
     @Named( value = "httpAuthenticator#basic" )
     private HttpBasicAuthentication httpAuthenticator;
 
+    @Inject
+    private UserRepositories userRepositories;
+
+    @Inject
+    private RepositoryRegistry repositoryRegistry;
+
     @Context
     private HttpServletRequest httpServletRequest;
 
@@ -68,6 +79,26 @@ public class DefaultNpmTokenService extends AbstractService implements NpmTokenS
         return tokenStore.listTokens( currentUsername() ).stream()
             .map( DefaultNpmTokenService::toInfo )
             .collect( Collectors.toList() );
+    }
+
+    @Override
+    public List<String> getAccessibleRepositories() throws ArchivaRestServiceException
+    {
+        try
+        {
+            List<String> ids = userRepositories.getObservableRepositoryIds( currentUsername() );
+            return ids == null ? java.util.Collections.emptyList() : ids.stream()
+                .filter( id -> {
+                    ManagedRepository repo = repositoryRegistry.getManagedRepository( id );
+                    return repo != null && repo.getType() == RepositoryType.NPM;
+                } )
+                .sorted()
+                .collect( Collectors.toList() );
+        }
+        catch ( ArchivaSecurityException e )
+        {
+            throw new ArchivaRestServiceException( e.getMessage(), Response.Status.FORBIDDEN.getStatusCode() );
+        }
     }
 
     @Override

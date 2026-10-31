@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.archiva.npm</groupId>
     <artifactId>archiva-npm</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.2</version>
   </parent>
 
   <artifactId>archiva-npm-repository</artifactId>

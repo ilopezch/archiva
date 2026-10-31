@@ -374,8 +374,17 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
                   displaySuccessMessage($.i18n.prop("managedrepository.scanned",managedRepository.name()));
                 },
                 error: function(data) {
-                  var res = $.parseJSON(data.responseText);
-                  displayRestError(res);
+                  // the "scan started" message was shown before the request was sent, replace it
+                  clearUserMessages();
+                  var res = null;
+                  try {
+                    res = $.parseJSON(data.responseText);
+                  } catch (e) {}
+                  if (res) {
+                    displayRestError(res);
+                  } else {
+                    displayErrorMessage("HTTP " + data.status + " " + data.statusText);
+                  }
                 },
                 complete: function(){
                   removeSmallSpinnerImg();

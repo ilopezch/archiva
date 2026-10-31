@@ -22,7 +22,7 @@
   <parent>
     <artifactId>plugins</artifactId>
     <groupId>org.apache.archiva</groupId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.2</version>
   </parent>
   <artifactId>generic-metadata-support</artifactId>
   <name>Archiva Core Plugins :: Generic Metadata Support</name>

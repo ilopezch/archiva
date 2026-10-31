@@ -316,6 +316,7 @@ public class DefaultArchivaAdministrationService
         }
         catch ( RepositoryAdminException e )
         {
+            log.error( "Unable to save organisation information: {}", e.getMessage(), e );
             throw new ArchivaRestServiceException( e.getMessage(), 400, e );
         }
     }

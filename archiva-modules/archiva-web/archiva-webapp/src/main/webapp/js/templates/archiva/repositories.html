@@ -1815,6 +1815,7 @@
     <th title="${ columnDefinition.title }">${ columnDefinition.headerText }</th>
     {{/each}}
     <th>${$.i18n.prop('scanned')}</th>
+    <th>${$.i18n.prop('managedrepository.scan.grid.header')}</th>
     <th>${$.i18n.prop('edit')}</th>
     <th>${$.i18n.prop('delete')}</th>
   </tr>
@@ -1833,6 +1834,11 @@
       {{else}}
       <img src="images/dialog-error-22-22.png"/>
       {{/if}}
+    </td>
+    <td>
+      <a href="#" title="${$.i18n.prop('managedrepository.scan.now')}" data-bind="click: function(){ scanNpmNow(row) }">
+        <span class="btn btn-success"><i class="icon-refresh icon-white"/></span>
+      </a>
     </td>
     <td>
       <a href="#" data-bind="click: function(){ editNpmRepository(row) }">

@@ -2240,6 +2240,18 @@ define("archiva.search",["jquery","jquery.ui","i18n","jquery.tmpl","select2","kn
     this.observableRepoIds=ko.observableArray([]);
     this.selectedRepoIds=[];
     this.resultViewModel=new ResultViewModel([]);
+    /**
+     * Repository ids chosen in the repositories select. The "all" pseudo-option is not a repository:
+     * choosing it (or nothing) yields an empty list, which the server resolves to every observable repository.
+     */
+    var excludeAllRepos=function(ids){
+      return $.grep(ids||[],function(id){
+        return id && $.trim(id).toLowerCase()!=="all";
+      });
+    };
+    var getSelectedRepoIds=function(){
+      return excludeAllRepos(mainContent.find("#search-basic-repositories-select").val());
+    };
     basicSearch=function(){
       var queryTerm=this.searchRequest().queryTerms();
       $.log("basicSearch:"+queryTerm);
@@ -2256,13 +2268,7 @@ define("archiva.search",["jquery","jquery.ui","i18n","jquery.tmpl","select2","kn
       }
       var location="#basicsearch";
 
-      self.selectedRepoIds=[];
-      mainContent.find("#search-basic-repositories" )
-          .find(".select2-search-choice").each(function(i,span){
-                      $.log("find .select2-search-choice");
-                      self.selectedRepoIds.push($(span).find("div").html());
-                      }
-                    );
+      self.selectedRepoIds=getSelectedRepoIds();
 
       if (self.selectedRepoIds.length>0){
         $.log("selectedRepoIds:"+self.selectedRepoIds.length);
@@ -2288,12 +2294,7 @@ define("archiva.search",["jquery","jquery.ui","i18n","jquery.tmpl","select2","kn
     advancedSearch=function(){
       var location="#advancedsearch";
 
-      self.selectedRepoIds=[];
-      mainContent.find("#search-basic-repositories" )
-          .find(".select2-search-choice").each(function(i,span){
-                      self.selectedRepoIds.push($(span).find("div").html());
-                      }
-                    );
+      self.selectedRepoIds=getSelectedRepoIds();
 
       if (self.selectedRepoIds.length>0){
         $.log("selectedRepoIds:"+self.selectedRepoIds.length);
@@ -2351,14 +2352,9 @@ define("archiva.search",["jquery","jquery.ui","i18n","jquery.tmpl","select2","kn
       var userMessages=$("#user-messages");
       userMessages.html(mediumSpinnerImg());
       if (repositoriesIds){
-        self.selectedRepoIds=repositoriesIds;
+        self.selectedRepoIds=excludeAllRepos(repositoriesIds);
       } else {
-        self.selectedRepoIds=[];
-        mainContent.find("#search-basic-repositories" )
-            .find(".select2-search-choice").each(function(i,span){
-                        self.selectedRepoIds.push($(span ).find("div").html());
-                        }
-                      );
+        self.selectedRepoIds=getSelectedRepoIds();
       }
       this.searchRequest().repositories=this.selectedRepoIds;
       $.ajax(url,

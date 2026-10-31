@@ -243,11 +243,11 @@ public class NpmRegistryServlet extends HttpServlet
         }
         else if ( npmReq.version != null )
         {
-            serveVersionMetadata( repo, npmReq, resp );
+            serveVersionMetadata( repo, npmReq, req, resp );
         }
         else
         {
-            serveMetadata( repo, npmReq, resp );
+            serveMetadata( repo, npmReq, req, resp );
         }
     }
 
@@ -374,7 +374,8 @@ public class NpmRegistryServlet extends HttpServlet
 
     // ---- GET handlers ---------------------------------------------------
 
-    private void serveMetadata( ManagedRepository repo, NpmRequest npmReq, HttpServletResponse resp )
+    private void serveMetadata( ManagedRepository repo, NpmRequest npmReq, HttpServletRequest req,
+                                HttpServletResponse resp )
         throws IOException
     {
         String metaPath = npmReq.packagePath() + "/package.json";
@@ -386,12 +387,57 @@ public class NpmRegistryServlet extends HttpServlet
             return;
         }
 
+        JsonNode doc;
+        try ( InputStream in = asset.getReadStream() )
+        {
+            doc = mapper.readTree( in );
+        }
+        catch ( IOException e )
+        {
+            log.warn( "Could not parse package.json for {}: {}", npmReq.packageName(), e.getMessage() );
+            resp.sendError( HttpServletResponse.SC_INTERNAL_SERVER_ERROR );
+            return;
+        }
+
+        rewriteTarballUrls( doc, getBaseUrl( req ) + "/npm/" + repo.getId() + "/" + npmReq.packagePath() );
         resp.setContentType( "application/json" );
         resp.setStatus( HttpServletResponse.SC_OK );
-        streamAsset( asset, resp );
+        mapper.writeValue( resp.getOutputStream(), doc );
     }
 
-    private void serveVersionMetadata( ManagedRepository repo, NpmRequest npmReq, HttpServletResponse resp )
+    /**
+     * Points every {@code dist.tarball} at this server. The stored value is whatever URL the publishing
+     * client used (possibly http, a different host, or with the scope repeated in the file name).
+     */
+    private static void rewriteTarballUrls( JsonNode doc, String packageUrl )
+    {
+        JsonNode versions = doc.path( "versions" );
+        if ( versions.isObject() )
+        {
+            for ( JsonNode v : versions )
+            {
+                rewriteTarballUrl( v, packageUrl );
+            }
+        }
+        else
+        {
+            rewriteTarballUrl( doc, packageUrl );
+        }
+    }
+
+    private static void rewriteTarballUrl( JsonNode version, String packageUrl )
+    {
+        JsonNode dist = version.path( "dist" );
+        String tarball = dist.path( "tarball" ).asText( null );
+        if ( dist.isObject() && tarball != null )
+        {
+            String file = tarball.substring( tarball.lastIndexOf( '/' ) + 1 );
+            ( (ObjectNode) dist ).put( "tarball", packageUrl + "/-/" + file );
+        }
+    }
+
+    private void serveVersionMetadata( ManagedRepository repo, NpmRequest npmReq, HttpServletRequest req,
+                                       HttpServletResponse resp )
         throws IOException
     {
         String metaPath = npmReq.packagePath() + "/package.json";
@@ -423,9 +469,11 @@ public class NpmRegistryServlet extends HttpServlet
             return;
         }
 
+        JsonNode out = versionNode.deepCopy();
+        rewriteTarballUrl( out, getBaseUrl( req ) + "/npm/" + repo.getId() + "/" + npmReq.packagePath() );
         resp.setContentType( "application/json" );
         resp.setStatus( HttpServletResponse.SC_OK );
-        mapper.writeValue( resp.getOutputStream(), versionNode );
+        mapper.writeValue( resp.getOutputStream(), out );
     }
 
     private void serveTarball( ManagedRepository repo, NpmRequest npmReq, HttpServletResponse resp )
@@ -628,11 +676,11 @@ public class NpmRegistryServlet extends HttpServlet
                 }
                 else if ( npmReq.version != null )
                 {
-                    serveVersionMetadata( member, npmReq, resp );
+                    serveVersionMetadata( member, npmReq, req, resp );
                 }
                 else
                 {
-                    serveMetadata( member, npmReq, resp );
+                    serveMetadata( member, npmReq, req, resp );
                 }
                 return;
             }
@@ -750,11 +798,40 @@ public class NpmRegistryServlet extends HttpServlet
         {
             return external.replaceAll( "/+$", "" );
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append( req.getScheme() ).append( "://" ).append( req.getServerName() );
+        // Behind a reverse proxy (nginx etc.) use the externally visible scheme/host/port
+        String scheme = firstHeaderValue( req, "X-Forwarded-Proto", req.getScheme() );
+        String host = firstHeaderValue( req, "X-Forwarded-Host", null );
         int port = req.getServerPort();
-        boolean defaultPort = ( "http".equals( req.getScheme() ) && port == 80 )
-            || ( "https".equals( req.getScheme() ) && port == 443 );
+        if ( host == null )
+        {
+            host = req.getServerName();
+        }
+        else
+        {
+            port = -1;
+            int colon = host.lastIndexOf( ':' );
+            if ( colon > 0 && host.indexOf( ']' ) < colon )
+            {
+                try
+                {
+                    port = Integer.parseInt( host.substring( colon + 1 ) );
+                    host = host.substring( 0, colon );
+                }
+                catch ( NumberFormatException e )
+                {
+                    // keep host as is
+                }
+            }
+            String fwdPort = firstHeaderValue( req, "X-Forwarded-Port", null );
+            if ( port < 0 && fwdPort != null && fwdPort.matches( "\\d+" ) )
+            {
+                port = Integer.parseInt( fwdPort );
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append( scheme ).append( "://" ).append( host );
+        boolean defaultPort = port < 0 || ( "http".equals( scheme ) && port == 80 )
+            || ( "https".equals( scheme ) && port == 443 );
         if ( !defaultPort )
         {
             sb.append( ':' ).append( port );
@@ -765,6 +842,16 @@ public class NpmRegistryServlet extends HttpServlet
             sb.append( ctx );
         }
         return sb.toString();
+    }
+
+    private static String firstHeaderValue( HttpServletRequest req, String name, String dflt )
+    {
+        String v = req.getHeader( name );
+        if ( v == null || v.trim().isEmpty() )
+        {
+            return dflt;
+        }
+        return v.split( "," )[0].trim();
     }
 
     // ---- PUT handlers ---------------------------------------------------
@@ -877,7 +964,9 @@ public class NpmRegistryServlet extends HttpServlet
             while ( it.hasNext() )
             {
                 Map.Entry<String, JsonNode> entry = it.next();
+                // npm names scoped attachments "@scope/name-version.tgz"; store by base filename only
                 String filename = entry.getKey();
+                filename = filename.substring( filename.lastIndexOf( '/' ) + 1 );
                 String b64Data = entry.getValue().path( "data" ).asText( null );
                 if ( b64Data == null )
                 {
@@ -1370,8 +1459,8 @@ public class NpmRegistryServlet extends HttpServlet
                 String next = parts[idx];
                 if ( "-".equals( next ) && idx + 1 < parts.length )
                 {
-                    // tarball: /-/{filename}
-                    tarball = parts[idx + 1];
+                    // tarball: /-/{filename}; clients may repeat the scope ("-/@scope/name-1.0.0.tgz")
+                    tarball = parts[parts.length - 1];
                 }
                 else if ( "-rev".equals( next ) )
                 {

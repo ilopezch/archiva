@@ -703,13 +703,12 @@ function(jquery,utils,i18n,jqueryValidate,ko,koSimpleGrid,purl) {
       select.off("change").on("change",function(){
         selectedRepoId=select.val()||null;
       });
-      $.ajax(NPM_REPO_API_BASE,{
+      $.ajax(NPM_TOKEN_API_BASE+"/repositories",{
         type:"GET",
         dataType:"json",
-        success:function(data){
-          var repos=(data && data.data) ? data.data : [];
-          $.each(repos,function(i,repo){
-            select.append($("<option>").val(repo.id).text(repo.id));
+        success:function(repos){
+          $.each(repos||[],function(i,id){
+            select.append($("<option>").val(id).text(id));
           });
         }
       });

@@ -223,13 +223,17 @@ public class DefaultRepositoriesService
             org.apache.archiva.repository.ManagedRepository repository = repositoryRegistry.getManagedRepository( repositoryId );
 
 
-            ArtifactIndexingTask task =
-                new ArtifactIndexingTask( repository, null, ArtifactIndexingTask.Action.FINISH, repository.getIndexingContext() );
+            // The Maven index only exists for repositories that have an indexing context (not npm/rpm)
+            if ( repository.getIndexingContext() != null )
+            {
+                ArtifactIndexingTask task =
+                    new ArtifactIndexingTask( repository, null, ArtifactIndexingTask.Action.FINISH, repository.getIndexingContext() );
 
-            task.setExecuteOnEntireRepo( true );
-            task.setOnlyUpdate( !fullScan );
+                task.setExecuteOnEntireRepo( true );
+                task.setOnlyUpdate( !fullScan );
 
-            archivaIndexingTaskExecutor.executeTask( task );
+                archivaIndexingTaskExecutor.executeTask( task );
+            }
 
             scheduler.queueTask( new RepositoryTask( repositoryId, fullScan ) );
 

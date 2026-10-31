@@ -311,7 +311,27 @@ public class MavenRepositorySearch
         {
             FlatSearchRequest request = new FlatSearchRequest( q );
 
-            request.setContexts( getIndexingContexts( indexingContextIds ) );
+            List<IndexingContext> searchContexts = getIndexingContexts( indexingContextIds );
+            request.setContexts( searchContexts );
+            if ( log.isInfoEnabled() )
+            {
+                for ( IndexingContext ctx : searchContexts )
+                {
+                    try
+                    {
+                        log.info( "Search '{}': context {} searchable={} documents={}", q, ctx.getId(),
+                                  ctx.isSearchable(), ctx.getSize() );
+                    }
+                    catch ( IOException e )
+                    {
+                        log.info( "Search '{}': context {} size not readable: {}", q, ctx.getId(), e.getMessage() );
+                    }
+                }
+                if ( searchContexts.isEmpty() )
+                {
+                    log.info( "Search '{}': no maven indexing context available for {}", q, indexingContextIds );
+                }
+            }
             if ( limits != null )
             {
                 // we apply limits only when first page asked
@@ -322,6 +342,7 @@ public class MavenRepositorySearch
             }
 
             FlatSearchResponse response = indexer.searchFlat( request );
+            log.info( "Search '{}': {} total hits", q, response == null ? 0 : response.getTotalHitsCount() );
 
             if ( response == null || response.getTotalHitsCount() == 0 )
             {

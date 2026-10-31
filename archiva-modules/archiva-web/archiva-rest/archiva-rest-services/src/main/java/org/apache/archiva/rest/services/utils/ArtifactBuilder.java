@@ -23,6 +23,7 @@ import org.apache.archiva.metadata.model.ArtifactMetadata;
 import org.apache.archiva.maven.metadata.model.MavenArtifactFacet;
 import org.apache.archiva.repository.content.BaseRepositoryContentLayout;
 import org.apache.archiva.repository.ManagedRepositoryContent;
+import org.apache.archiva.repository.RepositoryType;
 import org.apache.archiva.repository.content.LayoutException;
 import org.apache.archiva.repository.content.base.ArchivaItemSelector;
 import org.apache.archiva.repository.storage.StorageAsset;
@@ -66,6 +67,10 @@ public class ArtifactBuilder
 
     public Artifact build()
     {
+        if ( RepositoryType.NPM.equals( managedRepositoryContent.getRepository().getType() ) )
+        {
+            return buildNpmArtifact();
+        }
         String type = null, classifier = null;
 
         MavenArtifactFacet facet = (MavenArtifactFacet) artifactMetadata.getFacet( MavenArtifactFacet.FACET_ID );
@@ -109,29 +114,8 @@ public class ArtifactBuilder
         artifact.setType( type );
         artifact.setFileExtension( extension );
         artifact.setPath( managedRepositoryContent.toPath( repoArtifact ) );
-        // TODO: find a reusable formatter for this
-        double s = this.artifactMetadata.getSize();
-        String symbol = "b";
-        if ( s > 1024 )
-        {
-            symbol = "K";
-            s /= 1024;
-
-            if ( s > 1024 )
-            {
-                symbol = "M";
-                s /= 1024;
-
-                if ( s > 1024 )
-                {
-                    symbol = "G";
-                    s /= 1024;
-                }
-            }
-        }
         artifact.setContext( managedRepositoryContent.getId() );
-        DecimalFormat df = new DecimalFormat( "#,###.##", new DecimalFormatSymbols( Locale.US ) );
-        artifact.setSize( df.format( s ) + " " + symbol );
+        artifact.setSize( formatSize( this.artifactMetadata.getSize() ) );
 
         artifact.setId( repoArtifact.getId() + "-" + repoArtifact.getArtifactVersion() + "." + repoArtifact.getType() );
 
@@ -161,4 +145,46 @@ public class ArtifactBuilder
         return StorageUtil.getExtension( file );
     }
 
+
+    /** npm tarball: {@code [@scope/]name/-/name-version.tgz}; the metadata namespace is the scope (may be empty). */
+    private Artifact buildNpmArtifact()
+    {
+        String namespace = artifactMetadata.getNamespace() == null ? "" : artifactMetadata.getNamespace();
+        String name = artifactMetadata.getProject();
+        String version = artifactMetadata.getVersion();
+        String filename = name + "-" + version + ".tgz";
+        Artifact artifact = new Artifact( namespace, name, version );
+        artifact.setRepositoryId( artifactMetadata.getRepositoryId() );
+        artifact.setPackaging( "tgz" );
+        artifact.setType( "tgz" );
+        artifact.setFileExtension( "tgz" );
+        artifact.setPath( ( namespace.isEmpty() ? "" : namespace + "/" ) + name + "/-/" + filename );
+        artifact.setContext( managedRepositoryContent.getId() );
+        artifact.setSize( formatSize( artifactMetadata.getSize() ) );
+        artifact.setId( filename );
+        return artifact;
+    }
+
+    public static String formatSize( long size )
+    {
+        double s = size;
+        String symbol = "b";
+        if ( s > 1024 )
+        {
+            symbol = "K";
+            s /= 1024;
+            if ( s > 1024 )
+            {
+                symbol = "M";
+                s /= 1024;
+                if ( s > 1024 )
+                {
+                    symbol = "G";
+                    s /= 1024;
+                }
+            }
+        }
+        DecimalFormat df = new DecimalFormat( "#,###.##", new DecimalFormatSymbols( Locale.US ) );
+        return df.format( s ) + " " + symbol;
+    }
 }

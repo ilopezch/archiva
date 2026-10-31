@@ -23,7 +23,7 @@
   <parent>
     <artifactId>oak-jcr</artifactId>
     <groupId>org.apache.archiva</groupId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.2</version>
   </parent>
   <artifactId>metadata-store-jcr</artifactId>
   <name>Archiva Metadata :: Store Provider :: JCR :: Oak Implementation</name>

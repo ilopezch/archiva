@@ -156,6 +156,41 @@ function(jquery,i18n,jqueryTmpl,bootstrap,jqueryValidate,ko) {
       activateNpmRepositoryFormValidation();
     }
 
+    scanNpmNow=function(npmRepository){
+      clearUserMessages();
+      openDialogConfirm(
+        function(){
+          $("#dialog-confirm-modal").find("#modal-login-footer").append(smallSpinnerImg());
+          var fullScan=$("#managed-repository-scan-now-all").get(0).checked;
+          var url="restServices/archivaServices/repositoriesService/scanRepositoryNow?";
+          url+="repositoryId="+encodeURIComponent(npmRepository.id());
+          url+="&fullScan="+(fullScan==true?"true":"false");
+          $.ajax(url,{
+            type:"GET",
+            beforeSend:function(){
+              displayInfoMessage($.i18n.prop("managedrepository.scan.started",npmRepository.id()));
+              closeDialogConfirm();
+            },
+            success:function(){
+              displaySuccessMessage($.i18n.prop("managedrepository.scanned",npmRepository.name()));
+            },
+            error:function(data){
+              var res=$.parseJSON(data.responseText);
+              displayRestError(res);
+            },
+            complete:function(){
+              removeSmallSpinnerImg();
+              closeDialogConfirm();
+            }
+          });
+        },
+        $.i18n.prop("ok"),
+        $.i18n.prop("cancel"),
+        $.i18n.prop("managedrepository.scan.now"),
+        $("#managed-repository-scan-now-modal-tmpl").tmpl(npmRepository)
+      );
+    }
+
     removeNpmRepository=function(npmRepository){
       clearUserMessages();
       openDialogConfirm(

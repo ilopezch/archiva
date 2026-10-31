@@ -929,11 +929,11 @@ function(jquery,ui,sammy,tmpl,i18n,jqueryCookie,bootstrap,archivaSearch,jqueryVa
     if(user) {
       if (user.validationToken) {
         $.log("Adding validation token "+user.validationToken);
-        $.ajaxSetup({
-                      beforeSend: function (xhr) {
-                        xhr.setRequestHeader('X-XSRF-TOKEN', user.validationToken);
-                      }
-                    });
+        // ajaxSend is used instead of ajaxSetup({beforeSend}) because a beforeSend given to an
+        // individual $.ajax call replaces the global one and the token would not be sent
+        $(document).off("ajaxSend.validationToken").on("ajaxSend.validationToken", function (event, xhr) {
+          xhr.setRequestHeader('X-XSRF-TOKEN', user.validationToken);
+        });
       } else {
         $.log("No validation token in user object "+user.username+", "+user.validationToken);
       }

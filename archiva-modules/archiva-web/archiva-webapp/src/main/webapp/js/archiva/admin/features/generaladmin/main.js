@@ -452,7 +452,12 @@ define("archiva/admin/features/generaladmin/main",["jquery","jquery.ui","i18n","
           updateAppearanceToolBar();
         },
         error: function(data){
-          displayErrorMessage($.i18n.prop('appearance-configuration.updating-error'));
+          var serverMessage=null;
+          try {
+            serverMessage=$.parseJSON(data.responseText).errorMessage;
+          } catch (e) {}
+          displayErrorMessage($.i18n.prop('appearance-configuration.updating-error')
+              + (serverMessage ? ": " + serverMessage : ""));
         },
         complete: function(){
           removeMediumSpinnerImg(userMessages);

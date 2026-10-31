@@ -731,6 +731,16 @@ public class DefaultArchivaConfiguration
             configuration.getRepositoryScanning().setKnownContentConsumers(knowContentConsumers);
         }
 
+        // ensure the npm and rpm metadata consumers are here (they only match their own artifact types)
+        for (String consumerId : new String[]{"npm-metadata", "rpm-metadata"}) {
+            if (!configuration.getRepositoryScanning().getKnownContentConsumers().contains(consumerId)) {
+                List<String> knowContentConsumers =
+                        new ArrayList<>(configuration.getRepositoryScanning().getKnownContentConsumers());
+                knowContentConsumers.add(consumerId);
+                configuration.getRepositoryScanning().setKnownContentConsumers(knowContentConsumers);
+            }
+        }
+
         // ensure duplicate-artifacts is here
         if (!configuration.getRepositoryScanning().getKnownContentConsumers().contains("duplicate-artifacts")) {
             List<String> knowContentConsumers =

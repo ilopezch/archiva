@@ -44,6 +44,15 @@
     </init-param>
   </filter>
 
+  <filter>
+    <filter-name>noCacheFilter</filter-name>
+    <filter-class>org.apache.archiva.web.filter.NoCacheFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>noCacheFilter</filter-name>
+    <url-pattern>/js/*</url-pattern>
+  </filter-mapping>
   <filter-mapping>
     <filter-name>encodingFilter</filter-name>
     <url-pattern>/js/*</url-pattern>

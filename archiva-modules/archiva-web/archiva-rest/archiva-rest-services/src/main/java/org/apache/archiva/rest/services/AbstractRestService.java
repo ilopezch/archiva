@@ -39,6 +39,7 @@ import org.apache.archiva.redback.users.User;
 import org.apache.archiva.repository.ManagedRepositoryContent;
 import org.apache.archiva.repository.ManagedRepository;
 import org.apache.archiva.repository.RepositoryException;
+import org.apache.archiva.repository.RepositoryType;
 import org.apache.archiva.repository.RepositoryRegistry;
 import org.apache.archiva.metadata.audit.AuditListener;
 import org.apache.archiva.rest.api.services.ArchivaRestServiceException;
@@ -334,7 +335,21 @@ public abstract class AbstractRestService
                         new ArtifactBuilder().forArtifactMetadata( artifact ).withManagedRepositoryContent(
                             content );
                     Artifact art = builder.build();
-                    art.setUrl( getArtifactUrl( art, repositoryId ) );
+                    if ( RepositoryType.NPM.equals( repo.getType() ) )
+                    {
+                        try
+                        {
+                            art.setUrl( getBaseUrl() + "/npm/" + repoId + "/" + art.getPath() );
+                        }
+                        catch ( RepositoryAdminException e )
+                        {
+                            throw new RepositoryException( e.getMessage(), e );
+                        }
+                    }
+                    else
+                    {
+                        art.setUrl( getArtifactUrl( art, repositoryId ) );
+                    }
                     artifacts.add( art );
                 }
                 return artifacts;

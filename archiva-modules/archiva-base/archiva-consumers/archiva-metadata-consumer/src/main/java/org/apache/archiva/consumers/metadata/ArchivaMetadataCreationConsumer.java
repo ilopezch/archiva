@@ -38,6 +38,7 @@ import org.apache.archiva.metadata.repository.storage.RepositoryStorageRuntimeEx
 import org.apache.archiva.components.registry.Registry;
 import org.apache.archiva.components.registry.RegistryListener;
 import org.apache.archiva.repository.ManagedRepository;
+import org.apache.archiva.repository.RepositoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -93,6 +94,8 @@ public class ArchivaMetadataCreationConsumer
 
     private String repoId;
 
+    private boolean mavenRepository = true;
+
     @Override
     public String getId()
     {
@@ -122,6 +125,8 @@ public class ArchivaMetadataCreationConsumer
         throws ConsumerException
     {
         repoId = repo.getId();
+        // Maven layout parsing is meaningless for npm/rpm repositories; they have their own consumers
+        mavenRepository = repo.getType() == null || RepositoryType.MAVEN.equals( repo.getType() );
         this.whenGathered = ZonedDateTime.ofInstant(whenGathered.toInstant(), ZoneId.of("GMT"));
     }
 
@@ -136,6 +141,10 @@ public class ArchivaMetadataCreationConsumer
     public void processFile( String path )
         throws ConsumerException
     {
+        if ( !mavenRepository )
+        {
+            return;
+        }
 
         RepositorySession repositorySession = null;
         try

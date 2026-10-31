@@ -40,6 +40,7 @@ import org.apache.archiva.proxy.model.RepositoryProxyHandler;
 import org.apache.archiva.components.cache.Cache;
 import org.apache.archiva.repository.ReleaseScheme;
 import org.apache.archiva.repository.RepositoryException;
+import org.apache.archiva.repository.RepositoryType;
 import org.apache.archiva.repository.RepositoryNotFoundException;
 import org.apache.archiva.repository.RepositoryRegistry;
 import org.apache.archiva.repository.metadata.MetadataReader;
@@ -391,7 +392,7 @@ public class DefaultBrowseService
                                 cacheToUpdate = true;
                             }
 
-                            if ( useCache && cacheToUpdate )
+                            if ( useCache && cacheToUpdate && projectVersionMetadataResolved != null )
                             {
                                 versionMetadataCache.put( cacheKey, projectVersionMetadataResolved );
                             }
@@ -497,7 +498,16 @@ public class DefaultBrowseService
     public List<TreeEntry> getTreeEntries( String groupId, String artifactId, String version, String repositoryId )
         throws ArchivaRestServiceException
     {
-        List<String> selectedRepos = getSelectedRepos( repositoryId );
+        List<String> selectedRepos = new ArrayList<>( getSelectedRepos( repositoryId ) );
+        // the dependency tree is built from Maven POMs; other repository types have none
+        selectedRepos.removeIf( id -> {
+            org.apache.archiva.repository.ManagedRepository r = repositoryRegistry.getManagedRepository( id );
+            return r != null && !RepositoryType.MAVEN.equals( r.getType() );
+        } );
+        if ( selectedRepos.isEmpty() )
+        {
+            return Collections.emptyList();
+        }
 
         try
         {
@@ -897,6 +907,17 @@ public class DefaultBrowseService
             {
 
                 org.apache.archiva.repository.ManagedRepository managedRepo = repositoryRegistry.getManagedRepository(repoId);
+                if ( RepositoryType.NPM.equals( managedRepo.getType() ) )
+                {
+                    // npm layout: [@scope/]name/-/name-version.tgz (namespace is the scope, if any)
+                    String prefix = StringUtils.isEmpty( groupId ) ? "" : groupId + "/";
+                    String npmPath = prefix + artifactId + "/-/" + artifactId + "-" + version + ".tgz";
+                    if ( managedRepo.getAsset( npmPath ).exists() )
+                    {
+                        return new AvailabilityStatus( true );
+                    }
+                    continue;
+                }
                 if (!proxyRegistry.hasHandler(managedRepo.getType())) {
                     throw new RepositoryException( "No proxy handler found for repository type "+managedRepo.getType());
                 }

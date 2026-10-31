@@ -22,7 +22,7 @@
   <parent>
     <artifactId>archiva-scheduler</artifactId>
     <groupId>org.apache.archiva</groupId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.2</version>
   </parent>
   <artifactId>archiva-scheduler-repository</artifactId>
   <name>Archiva Scheduler :: Repository Scanning</name>
