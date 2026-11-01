@@ -225,14 +225,16 @@ public class FileUtils {
     public static void copyContent(Path srcDir, Path destinationDir, boolean overwrite) throws IOException
     {
         CopyOption[] copyOption = overwrite ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING} : new CopyOption[]{};
-        Files.walk(srcDir).forEach(a -> {
-            Path b = destinationDir.resolve(srcDir.relativize( a ));
-            try {
-                Files.copy(a, b, copyOption);
-            } catch (IOException e) {
-                log.error( "Could not copy file {} to {}: {}", a, b, e.getMessage( ) );
-            }
-        });
+        try (Stream<Path> stream = Files.walk(srcDir)) {
+            stream.forEach(a -> {
+                Path b = destinationDir.resolve(srcDir.relativize( a ));
+                try {
+                    Files.copy(a, b, copyOption);
+                } catch (IOException e) {
+                    log.error( "Could not copy file {} to {}: {}", a, b, e.getMessage( ) );
+                }
+            });
+        }
     }
 
     public static void copyContent(Path srcDir, Path destinationDir) throws IOException {

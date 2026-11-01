@@ -278,8 +278,8 @@ public class FilesystemAsset implements StorageAsset, Comparable {
      */
     @Override
     public List<StorageAsset> list() {
-        try {
-            return Files.list(assetPath)
+        try (java.util.stream.Stream<Path> stream = Files.list(assetPath)) {
+            return stream
                 .sorted()
                 .map(p -> new FilesystemAsset(storage, relativePath + "/" + p.getFileName().toString(), assetPath.resolve(p), this.basePath))
                     .collect(Collectors.toList());

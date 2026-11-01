@@ -325,13 +325,18 @@ public class FileMetadataRepository
         final String searchFile = METADATA_KEY + ".properties";
         try {
             Path directory = getMetadataDirectory(repositoryId, facetId);
-            return Files.walk(directory, FileVisitOption.FOLLOW_LINKS).filter(Files::isDirectory)
+            // Materialize the names so the directory handles are closed before returning
+            final List<String> names;
+            try (Stream<Path> walk = Files.walk(directory, FileVisitOption.FOLLOW_LINKS)) {
+                names = walk.filter(Files::isDirectory)
                     .filter(path -> Files.exists(path.resolve(searchFile)))
                     .map(path -> directory.relativize(path).toString())
                     .sorted()
                     .skip(queryParameter.getOffset())
                     .limit(queryParameter.getLimit())
-                    .map(name -> getMetadataFacet(session, repositoryId, facetClazz, name));
+                    .collect(Collectors.toList());
+            }
+            return names.stream().map(name -> getMetadataFacet(session, repositoryId, facetClazz, name));
         } catch (IOException e) {
             throw new MetadataRepositoryException(e.getMessage(), e);
         }
@@ -1063,9 +1068,12 @@ public class FileMetadataRepository
         final String searchFile = NAMESPACE_METADATA_KEY + ".properties";
         try
         {
-            return  Files.list(directory).filter(Files::isDirectory).filter(path ->
+            try ( Stream<Path> list = Files.list(directory) )
+            {
+                return list.filter(Files::isDirectory).filter(path ->
                     Files.exists(path.resolve(searchFile))
-                ).map(path -> path.getFileName().toString());
+                ).map(path -> path.getFileName().toString()).collect(Collectors.toList()).stream();
+            }
         }
         catch ( IOException e )
         {

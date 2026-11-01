@@ -88,7 +88,9 @@ public class MavenIndexContext implements ArchivaIndexingContext {
 
     @Override
     public boolean isEmpty() throws IOException {
-        return Files.list(delegate.getIndexDirectoryFile().toPath()).count()==0;
+        try (java.util.stream.Stream<java.nio.file.Path> stream = Files.list(delegate.getIndexDirectoryFile().toPath())) {
+            return stream.count()==0;
+        }
     }
 
     @Override

@@ -185,7 +185,9 @@ public class StorageUtil
             {
                 Path src = srcAsset.getFilePath( );
                 Path dest = destAsset.getFilePath( );
-                return Files.walk( src )
+                try ( Stream<Path> walk = Files.walk( src ) )
+                {
+                return walk
                     .map( source -> {
                         try
                         {
@@ -205,6 +207,7 @@ public class StorageUtil
                             }
                         }
                     } ).reduce( ( a, b ) -> Boolean.logicalAnd( a, b ) ).get();
+                }
             }
             else
             {
