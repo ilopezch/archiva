@@ -161,6 +161,8 @@
           <systemPropertyVariables>
             <basedir>${basedir}</basedir>
             <appserver.base>${project.build.directory}/test-classes</appserver.base>
+            <!-- Isolate from a ~/archiva.xml, which commons-configuration would otherwise pick up before the test classpath one -->
+            <user.home>${project.build.directory}/test-home</user.home>
           </systemPropertyVariables>
         </configuration>
       </plugin>

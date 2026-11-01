@@ -31,6 +31,7 @@ import org.apache.archiva.metadata.repository.MetadataSessionException;
 import org.apache.archiva.metadata.repository.RepositorySession;
 import org.apache.archiva.metadata.repository.RepositorySessionFactory;
 import org.apache.archiva.repository.ManagedRepository;
+import org.apache.archiva.repository.RepositoryType;
 import org.apache.archiva.rpm.repository.repodata.RepomdGenerator;
 import org.apache.archiva.rpm.repository.repodata.RpmHeaderParser;
 import org.apache.archiva.rpm.repository.repodata.RpmPackageInfo;
@@ -83,6 +84,7 @@ public class RpmMetadataConsumer
 
     private String repoId;
     private Path repoDir;
+    private boolean rpmRepository;
     private ZonedDateTime whenGathered;
     private final RepomdGenerator repomdGenerator = new RepomdGenerator();
 
@@ -115,6 +117,7 @@ public class RpmMetadataConsumer
     {
         repoId = repository.getId();
         repoDir = repository.getRoot().getFilePath();
+        rpmRepository = repository.getType() == RepositoryType.RPM;
         this.whenGathered = ZonedDateTime.ofInstant( whenGathered.toInstant(), ZoneId.of( "UTC" ) );
     }
 
@@ -222,7 +225,7 @@ public class RpmMetadataConsumer
     @Override
     public void completeScan()
     {
-        if ( repoDir != null )
+        if ( repoDir != null && rpmRepository )
         {
             try
             {
