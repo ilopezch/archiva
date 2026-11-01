@@ -122,7 +122,8 @@ public class RepositoryContentConsumersTest
 
         String expectedKnownIds[] =
             new String[]{ "create-missing-checksums", "validate-checksum", "validate-signature", "index-content",
-                "auto-remove", "auto-rename", "create-archiva-metadata", "duplicate-artifacts" };
+                "auto-remove", "auto-rename", "create-archiva-metadata", "npm-metadata", "rpm-metadata",
+                "duplicate-artifacts" };
 //update-db-artifact, create-missing-checksums, update-db-repository-metadata,
 //validate-checksum, validate-signature, index-content, auto-remove, auto-rename,
 //metadata-updater
