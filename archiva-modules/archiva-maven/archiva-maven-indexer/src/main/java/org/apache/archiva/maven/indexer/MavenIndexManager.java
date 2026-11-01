@@ -47,6 +47,7 @@ import org.apache.archiva.repository.features.RemoteIndexFeature;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.index.ArtifactContext;
 import org.apache.maven.index.ArtifactContextProducer;
+import org.apache.maven.index.DefaultScanner;
 import org.apache.maven.index.DefaultScannerListener;
 import org.apache.maven.index.Indexer;
 import org.apache.maven.index.IndexerEngine;
@@ -251,7 +252,7 @@ public class MavenIndexManager implements ArchivaIndexManager {
         executeUpdateFunction( context, indexingContext -> {
             DefaultScannerListener listener = new DefaultScannerListener( indexingContext, indexerEngine, true, null );
             ScanningRequest request = new ScanningRequest( indexingContext, listener );
-            ScanningResult result = scanner.scan( request );
+            ScanningResult result = new DefaultScanner( new SafeArtifactContextProducer( artifactContextProducer ) ).scan( request );
             if ( result.hasExceptions( ) )
             {
                 log.error( "Exceptions occured during index scan of " + context.getId( ) );

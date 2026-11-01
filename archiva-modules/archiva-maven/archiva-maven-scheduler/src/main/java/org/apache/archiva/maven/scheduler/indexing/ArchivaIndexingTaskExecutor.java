@@ -28,6 +28,7 @@ import org.apache.archiva.repository.features.IndexCreationFeature;
 import org.apache.archiva.scheduler.indexing.ArtifactIndexingTask;
 import org.apache.maven.index.ArtifactContext;
 import org.apache.maven.index.ArtifactContextProducer;
+import org.apache.maven.index.DefaultScanner;
 import org.apache.maven.index.DefaultScannerListener;
 import org.apache.maven.index.FlatSearchRequest;
 import org.apache.maven.index.FlatSearchResponse;
@@ -112,7 +113,7 @@ public class ArchivaIndexingTaskExecutor
                 context.updateTimestamp( );
                 DefaultScannerListener listener = new DefaultScannerListener( context, indexerEngine, true, null );
                 ScanningRequest request = new ScanningRequest( context, listener );
-                ScanningResult result = scanner.scan( request );
+                ScanningResult result = new DefaultScanner( safeProducer() ).scan( request );
                 if ( result.hasExceptions( ) )
                 {
                     log.error( "Exceptions occured during index scan of " + context.getId( ) );
@@ -297,4 +298,24 @@ public class ArchivaIndexingTaskExecutor
         this.indexPacker = indexPacker;
     }
 
+
+    /**
+     * Producer that skips files the indexer cannot parse (e.g. odd files in SNAPSHOT dirs that make
+     * M2GavCalculator throw IndexOutOfBoundsException) instead of aborting the whole scan.
+     */
+    private ArtifactContextProducer safeProducer( )
+    {
+        return ( ctx, file ) -> {
+            try
+            {
+                return artifactContextProducer.getArtifactContext( ctx, file );
+            }
+            catch ( RuntimeException e )
+            {
+                log.warn( "Skipping file that cannot be indexed: {} ({}: {})", file, e.getClass( ).getSimpleName( ),
+                    e.getMessage( ) );
+                return null;
+            }
+        };
+    }
 }
