@@ -120,7 +120,8 @@ public class ArchivaConfigurationMRM789Test
         RepositoryScanningConfiguration repoScanning = configuration.getRepositoryScanning();
         assertNotNull( "check repository scanning", repoScanning );
         assertEquals( "check file types", 4, repoScanning.getFileTypes().size() );
-        assertEquals( "check known consumers", 9, repoScanning.getKnownContentConsumers().size() );
+        // 9 from default-archiva.xml + npm-metadata and rpm-metadata added by handleUpgradeConfiguration()
+        assertEquals( "check known consumers", 11, repoScanning.getKnownContentConsumers().size() );
         assertEquals( "check invalid consumers", 1, repoScanning.getInvalidContentConsumers().size() );
 
         List<String> patterns = filetypes.getFileTypePatterns( "artifacts" );
